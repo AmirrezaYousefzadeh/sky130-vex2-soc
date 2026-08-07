@@ -1,0 +1,35 @@
+[*]
+[*] GTKWave save file for sky130_vex2_soc smoke test
+[dumpfile] "sky130_vex2_soc.vcd"
+[timestart] 0
+[size] 1400 800
+[pos] -1 -1
+*-10.000000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[sst_width] 220
+[signals_width] 180
+[sst_expanded] 1
+[sst_vpaned_height] 400
+@28
+tb_sky130_vex2_soc.clk
+tb_sky130_vex2_soc.reset
+tb_sky130_vex2_soc.halted
+tb_sky130_vex2_soc.sram_clk_en
+@22
+tb_sky130_vex2_soc.tohost[31:0]
+@28
+tb_sky130_vex2_soc.u_soc.iBus_cmd_valid
+tb_sky130_vex2_soc.u_soc.iBus_cmd_ready
+tb_sky130_vex2_soc.u_soc.iBus_rsp_valid
+@22
+tb_sky130_vex2_soc.u_soc.iBus_cmd_payload_pc[31:0]
+tb_sky130_vex2_soc.u_soc.iBus_rsp_payload_inst[31:0]
+@28
+tb_sky130_vex2_soc.u_soc.dBus_cmd_valid
+tb_sky130_vex2_soc.u_soc.dBus_cmd_ready
+tb_sky130_vex2_soc.u_soc.dBus_cmd_payload_wr
+tb_sky130_vex2_soc.u_soc.dBus_rsp_ready
+@22
+tb_sky130_vex2_soc.u_soc.dBus_cmd_payload_address[31:0]
+tb_sky130_vex2_soc.u_soc.dBus_cmd_payload_data[31:0]
+[pattern_trace] 1
+[pattern_trace] 0

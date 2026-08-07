@@ -1,0 +1,20 @@
+# MNIST MLP activity-based power summary (example)
+# Regenerated with: ./power/run_power.sh ./simulation/mnist_mlp.vcd
+#
+# Method: RTL VCD toggle rates → OpenSTA set_power_activity on post-PnR
+#         netlist + SPEF, TT 1.8 V / 25 C.
+# Caveat: VCD is RTL-level; stdcell nets use median activity.
+#         SRAM ce/we use measured rates.
+
+cycles                  51594
+vcd_sim_clock           100 MHz (10 ns)  — testbench only
+design_clock_for_asic   25 MHz (40 ns) — matches hardened CLOCK_PERIOD
+
+activity_median         0.0481 / cycle
+imem_ce                  0.477
+dmem_ce                  0.095
+dmem_we                  0.00225
+
+power_25MHz_total_mW     5.037
+energy_one_infer_uJ     10.39
+runtime_25MHz_ms         2.064

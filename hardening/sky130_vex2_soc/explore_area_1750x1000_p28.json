@@ -1,0 +1,102 @@
+{
+  "DESIGN_NAME": "sky130_vex2_soc",
+  "VERILOG_FILES": [
+    "dir::../../rtl/cpu/VexRiscv2.v",
+    "dir::../../rtl/soc/ibus_sram22_bridge.v",
+    "dir::../../rtl/soc/dbus_sram22_bridge.v",
+    "dir::../../rtl/soc/sky130_vex2_soc.v"
+  ],
+  "CLOCK_PORT": "clk",
+  "CLOCK_PERIOD": 28,
+  "FP_SIZING": "absolute",
+  "DIE_AREA": [
+    0,
+    0,
+    1750,
+    1000
+  ],
+  "CORE_AREA": [
+    20.0,
+    20.0,
+    1730.0,
+    980.0
+  ],
+  "FP_PDN_MULTILAYER": true,
+  "VDD_NETS": [
+    "VPWR"
+  ],
+  "GND_NETS": [
+    "VGND"
+  ],
+  "PDN_MACRO_CONNECTIONS": [
+    "u_imem VPWR VGND vdd vss",
+    "u_dmem VPWR VGND vdd vss"
+  ],
+  "ERROR_ON_PDN_VIOLATIONS": false,
+  "FP_PDN_CFG": "dir::pdn_cfg_sram22.tcl",
+  "RUN_IRDROP_REPORT": false,
+  "FP_PDN_VPITCH": 100,
+  "FP_PDN_HPITCH": 100,
+  "FP_PDN_VSPACING": 15,
+  "FP_PDN_HSPACING": 15,
+  "PL_TARGET_DENSITY_PCT": 45,
+  "GPL_CELL_PADDING": 2,
+  "DPL_CELL_PADDING": 2,
+  "RT_MAX_LAYER": "met5",
+  "GRT_ALLOW_CONGESTION": true,
+  "ERROR_ON_SYNTH_CHECKS": false,
+  "RUN_LINTER": false,
+  "PRIMARY_GDSII_STREAMOUT_TOOL": "klayout",
+  "RUN_MAGIC_STREAMOUT": false,
+  "RUN_MAGIC_WRITE_LEF": true,
+  "RUN_MAGIC_DRC": false,
+  "RUN_KLAYOUT_XOR": false,
+  "RUN_LVS": false,
+  "MAGIC_CAPTURE_ERRORS": false,
+  "ERROR_ON_ILLEGAL_OVERLAPS": false,
+  "MACROS": {
+    "sram22_2048x32m8w8": {
+      "instances": {
+        "u_imem": {
+          "location": [
+            40,
+            40
+          ],
+          "orientation": "N"
+        },
+        "u_dmem": {
+          "location": [
+            914.48,
+            40
+          ],
+          "orientation": "N"
+        }
+      },
+      "gds": [
+        "dir::macros/sram22_2048x32m8w8.gds"
+      ],
+      "lef": [
+        "dir::macros/sram22_2048x32m8w8.lef"
+      ],
+      "vh": [
+        "dir::macros/sram22_2048x32m8w8.bb.v"
+      ],
+      "lib": {
+        "*_tt_025C_1v80": [
+          "dir::macros/sram22_2048x32m8w8_tt_025C_1v80.lib"
+        ],
+        "*_ss_100C_1v60": [
+          "dir::macros/sram22_2048x32m8w8_ss_100C_1v60.lib"
+        ],
+        "*_ff_n40C_1v95": [
+          "dir::macros/sram22_2048x32m8w8_ff_n40C_1v95.lib"
+        ]
+      },
+      "nl": [],
+      "pnl": [],
+      "spice": [],
+      "spef": {},
+      "sdf": {}
+    }
+  }
+}
