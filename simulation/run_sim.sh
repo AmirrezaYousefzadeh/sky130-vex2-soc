@@ -63,8 +63,8 @@ case "$MODE" in
     echo "Waveform: $VCD_PATH"
     ;;
   fw|mnist|firmware)
-    make -C "$ROOT/fw" all
-    cp -f "$ROOT/fw/build/imem.hex" "$ROOT/fw/build/dmem.hex" .
+    make -C "$ROOT/firmware" all
+    cp -f "$ROOT/firmware/build/imem.hex" "$ROOT/firmware/build/dmem.hex" .
     # Default: dump VCD for fw when DUMP_VCD unset → off; --vcd or DUMP_VCD=1 enables
     DUMP_VCD="${DUMP_VCD:-0}"
     DUMP_FLAGS=()

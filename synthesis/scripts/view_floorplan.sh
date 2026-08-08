@@ -6,7 +6,7 @@ source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh 2>/dev/null || 
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 OL2="${OPENLANE_ROOT:-/media/hardware_design_tools/openlane2}"
-ODB="${1:-$ROOT/hardening/sky130_vex2_soc/runs/sky130_vex2_soc/12-odb-manualmacroplacement/sky130_vex2_soc.odb}"
+ODB="${1:-$ROOT/synthesis/sky130_vex2_soc/runs/sky130_vex2_soc/12-odb-manualmacroplacement/sky130_vex2_soc.odb}"
 
 if [[ ! -f "$ODB" ]]; then
   echo "Missing ODB: $ODB"

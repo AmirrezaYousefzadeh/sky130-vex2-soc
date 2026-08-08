@@ -9,18 +9,20 @@ tools/*.tar.gz
 tools/*.tgz
 
 simulation/build/
+simulation/build_gls/
 simulation/*.vcd
 simulation/latest.vcd
+simulation/latest_gls.vcd
 
-fw/build/
-fw/mnist/data/
+firmware/build/
+firmware/mnist/data/
 
-hardening/**/runs/
-hardening/**/explore_logs/
-hardening/**/macros/*.gds
-hardening/**/macros/*.gds.*
-hardening/**/*.log
-hardening/**/floorplan_*.png
+synthesis/**/runs/
+synthesis/**/explore_logs/
+synthesis/**/macros/*.gds
+synthesis/**/macros/*.gds.*
+synthesis/**/*.log
+synthesis/**/floorplan_*.png
 
 power/out_*/
 power/*/activity.json
@@ -29,11 +31,11 @@ power/*/activity.tcl
 third_party/VexRiscv/
 third_party/sram22_sky130_macros/
 
-hardening/**/macros/*.gds
-hardening/**/macros/*.gds.*
-hardening/**/macros/*.log
-hardening/**/macros/_*.py
-hardening/**/macros/_*.tcl
-hardening/**/macros/_*.gds
-hardening/**/macros/*.pre_*
+synthesis/**/macros/*.gds
+synthesis/**/macros/*.gds.*
+synthesis/**/macros/*.log
+synthesis/**/macros/_*.py
+synthesis/**/macros/_*.tcl
+synthesis/**/macros/_*.gds
+synthesis/**/macros/*.pre_*
 tools/oss-cad-suite

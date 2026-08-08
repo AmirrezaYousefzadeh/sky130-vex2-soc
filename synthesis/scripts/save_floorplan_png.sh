@@ -6,15 +6,15 @@
 #   ./scripts/save_floorplan_png.sh path/to/design.def
 #   OUT=my_floorplan.png ./scripts/save_floorplan_png.sh
 #
-# Output defaults to: hardening/sky130_vex2_soc/floorplan_real.png
+# Output defaults to: synthesis/sky130_vex2_soc/floorplan_real.png
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-DESIGN_DIR="$ROOT/hardening/sky130_vex2_soc"
+DESIGN_DIR="$ROOT/synthesis/sky130_vex2_soc"
 RUNS="$DESIGN_DIR/runs"
 LEF="$DESIGN_DIR/macros/sram22_2048x32m8w8.lef"
 OUT="${OUT:-$DESIGN_DIR/floorplan_real.png}"
-PY="$ROOT/hardening/scripts/plot_floorplan_def.py"
+PY="$ROOT/synthesis/scripts/plot_floorplan_def.py"
 
 pick_python() {
   if [[ -x /media/hardware_design_tools/venv/bin/python ]]; then

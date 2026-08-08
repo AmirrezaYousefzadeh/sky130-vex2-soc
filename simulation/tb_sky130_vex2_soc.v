@@ -18,6 +18,11 @@ module tb_sky130_vex2_soc;
     .sram_clk_en(sram_clk_en)
   );
 
+  // Gate-level: zero synthesized regfile (RTL used $readmemb zeros).
+`ifdef GLS_RF_INIT
+  `include "gls_regfile_init.vh"
+`endif
+
   // Machine code in IMEM (little-endian words):
   //   addi a0, x0, 1          -> 0x00100513
   //   lui  a1, 0x20000        -> 0x200005b7   (a1 = 0x20000000)
@@ -29,10 +34,17 @@ module tb_sky130_vex2_soc;
   `define DUMP_PATH "sky130_vex2_soc.vcd"
 `endif
 
+  `ifndef DUMP_LEVEL
+    `define DUMP_LEVEL 0
+  `endif
+  `ifndef DUMP_MODULE
+    `define DUMP_MODULE tb_sky130_vex2_soc
+  `endif
+
   initial begin
     $dumpfile(`DUMP_PATH);
-    $dumpvars(0, tb_sky130_vex2_soc);
-    $display("WAVEFORM: dumping to %s", `DUMP_PATH);
+    $dumpvars(`DUMP_LEVEL, `DUMP_MODULE);
+    $display("WAVEFORM: dumping to %s (level=%0d)", `DUMP_PATH, `DUMP_LEVEL);
 
     // Backdoor load into SRAM behavioral model
     u_soc.u_imem.mem[0] = 32'h00100513;

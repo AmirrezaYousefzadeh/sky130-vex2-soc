@@ -28,5 +28,5 @@ if [[ -f "$SRC" ]]; then
   echo "Linked rtl/sram/${CELL}.v"
 fi
 
-echo "Done. For OpenLane macros, copy/patch views into hardening/sky130_vex2_soc/macros/"
-echo "  (see hardening/scripts/fix_sram22_macro.sh)"
+echo "Done. For OpenLane macros, copy/patch views into synthesis/sky130_vex2_soc/macros/"
+echo "  (see synthesis/scripts/fix_sram22_macro.sh)"

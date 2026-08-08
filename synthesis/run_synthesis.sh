@@ -1,41 +1,43 @@
 #!/usr/bin/env bash
-# Harden sky130_vex2_soc with OpenLane 2, then print a text results summary.
+# Synthesize / place-and-route sky130_vex2_soc with OpenLane 2, then print results.
 #
 # Usage:
-#   ./hardening/run_harden.sh
-#   ./hardening/run_harden.sh --report-only   # skip flow; only summarize last run
+#   ./synthesis/run_synthesis.sh
+#   TO=OpenROAD.STAPostPNR ./synthesis/run_synthesis.sh   # fast: stop after timing
+#   (default runs further; Magics streamout/IR-drop are off in config.json)
 #
 # Env:
 #   RUN_TAG=name          run directory name (default sky130_vex2_soc)
-#   CFG=path              OpenLane config JSON
+#   CFG=path              OpenLane config (YAML/JSON)
 #   FROM=Step.Id          resume from step
-#   TO=Step.Id            stop after step
+#   TO=Step.Id            stop after step (default OpenROAD.STAPostPNR)
 #   OVERWRITE=0           keep existing run (needed with FROM)
 #   PDK_ROOT / PDK / OPENLANE_ROOT
 #
 # Clock period (ns) lives in:
-#   hardening/sky130_vex2_soc/config.json  →  "CLOCK_PERIOD"
+#   synthesis/sky130_vex2_soc/config.yaml  →  CLOCK_PERIOD
 set -euo pipefail
 
 export PATH="/nix/var/nix/profiles/default/bin:$PATH"
 source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh 2>/dev/null || true
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-HARDEN="$(cd "$(dirname "$0")" && pwd)"
+SYNTH="$(cd "$(dirname "$0")" && pwd)"
 export PDK_ROOT="${PDK_ROOT:-/media/pdk}"
 export PDK="${PDK:-sky130A}"
 OL2="${OPENLANE_ROOT:-/media/hardware_design_tools/openlane2}"
-DES="$HARDEN/sky130_vex2_soc"
-CFG="${CFG:-$DES/config.json}"
+DES="$SYNTH/sky130_vex2_soc"
+CFG="${CFG:-$DES/config.yaml}"
 RUN_TAG="${RUN_TAG:-sky130_vex2_soc}"
 FROM="${FROM:-}"
-TO="${TO:-}"
+TO="${TO:-OpenROAD.STAPostPNR}"
 OVERWRITE="${OVERWRITE:-1}"
 REPORT_ONLY=0
 
 for arg in "$@"; do
   case "$arg" in
     --report-only) REPORT_ONLY=1 ;;
+    --full) TO="" ;;
     -h|--help)
       sed -n '2,20p' "$0"
       exit 0
@@ -48,7 +50,7 @@ for arg in "$@"; do
 done
 
 report() {
-  python3 "$HARDEN/report_results.py" \
+  python3 "$SYNTH/report_results.py" \
     --design-dir "$DES" \
     --run-tag "$RUN_TAG" \
     --config "$CFG"
@@ -78,6 +80,7 @@ if [[ "$OVERWRITE" == "1" ]]; then
 fi
 
 cd "$DES"
+set +e
 nix --extra-experimental-features "nix-command flakes" develop --accept-flake-config \
   "$OL2" -c \
   python3 -m openlane \
@@ -87,7 +90,11 @@ nix --extra-experimental-features "nix-command flakes" develop --accept-flake-co
     --run-tag "$RUN_TAG" \
     "${EXTRA[@]}" \
     "$CFG"
+rc=$?
+set -e
 
 echo
-echo "======== Hardening results ========"
-report
+echo "======== Synthesis results ========"
+# Always try to report (STA metrics are enough even if signoff failed).
+report || true
+exit "$rc"

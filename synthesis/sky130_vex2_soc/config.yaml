@@ -1,0 +1,103 @@
+# OpenLane 2 design config for sky130_vex2_soc (sky130A).
+# YAML is used instead of JSON so these comments are valid (OpenLane forbids JSON comments).
+
+# Top-level cell name / module to implement.
+DESIGN_NAME: sky130_vex2_soc
+
+# RTL sources. "dir::" resolves relative to this design directory.
+VERILOG_FILES:
+  - dir::../../rtl/cpu/VexRiscv2.v
+  - dir::../../rtl/soc/ibus_sram22_bridge.v
+  - dir::../../rtl/soc/dbus_sram22_bridge.v
+  - dir::../../rtl/soc/sky130_vex2_soc.v
+
+# Timing target: port name + period in ns (40 ns => 25 MHz).
+# Smaller period = higher Fmax target; STA fails if the design cannot meet it.
+CLOCK_PORT: clk
+CLOCK_PERIOD: 40
+
+# Floorplan outline (µm). FP_SIZING=absolute means DIE_AREA / CORE_AREA are used as-is
+# (vs relative sizing from utilization).
+# DIE_AREA:  [llx, lly, urx, ury] outer chip boundary.
+# CORE_AREA: placement region inside the die (must stay strictly inside DIE_AREA).
+FP_SIZING: absolute
+DIE_AREA: [0, 0, 2000, 1000]
+CORE_AREA: [20, 20, 1980, 980]
+
+# Power distribution network (PDN).
+# Multilayer straps + custom SRAM22 hookup script (FP_PDN_CFG).
+FP_PDN_MULTILAYER: true
+VDD_NETS: [VPWR]
+GND_NETS: [VGND]
+# Connect chip VPWR/VGND to each SRAM instance's vdd/vss pins.
+PDN_MACRO_CONNECTIONS:
+  - u_imem VPWR VGND vdd vss
+  - u_dmem VPWR VGND vdd vss
+# SRAM22 LEF pin islands often trip OpenLane PDN checks; keep false unless PDN is clean.
+ERROR_ON_PDN_VIOLATIONS: false
+FP_PDN_CFG: dir::pdn_cfg_sram22.tcl
+# IR-drop (PSM) also fails on those SRAM22 met2 islands; re-enable when PDN/PSM is clean.
+RUN_IRDROP_REPORT: false
+# Strap pitch / spacing (µm): how dense the power grid is.
+FP_PDN_VPITCH: 80
+FP_PDN_HPITCH: 80
+FP_PDN_VSPACING: 15
+FP_PDN_HSPACING: 15
+
+# Placement: target stdcell density (%). Higher => tighter pack, more congestion risk.
+PL_TARGET_DENSITY_PCT: 40
+# Extra site-padding around cells during global / detailed placement (helps DRC/routing).
+GPL_CELL_PADDING: 2
+DPL_CELL_PADDING: 2
+
+# Routing: top metal allowed for signal routes (sky130 typically met1–met5).
+RT_MAX_LAYER: met5
+# Do not hard-fail the flow on residual global-route congestion.
+GRT_ALLOW_CONGESTION: true
+
+# Synthesis / lint strictness — disabled so exploratory runs keep going.
+ERROR_ON_SYNTH_CHECKS: false
+RUN_LINTER: false
+
+# Signoff / streamout: prefer KLayout GDS; skip slow Magics/LVS/XOR for day-to-day runs.
+PRIMARY_GDSII_STREAMOUT_TOOL: klayout
+RUN_MAGIC_STREAMOUT: false
+RUN_MAGIC_WRITE_LEF: false
+RUN_MAGIC_DRC: false
+RUN_KLAYOUT_XOR: false
+RUN_LVS: false
+MAGIC_CAPTURE_ERRORS: false
+ERROR_ON_ILLEGAL_OVERLAPS: false
+# Prefer macro LEF geometry over stdcell-derived outlines when Magics writes LEF.
+MAGIC_MACRO_STD_CELL_SOURCE: macro
+
+# Hard macros (SRAM22). Instances get fixed floorplan locations (µm) + orientations.
+# gds/lef/vh/lib views live under macros/ (see scripts/fix_sram22_macro.sh).
+MACROS:
+  sram22_2048x32m8w8:
+    instances:
+      u_imem:
+        location: [80, 80]
+        orientation: N
+      u_dmem:
+        location: [1255, 80]
+        orientation: N
+    gds:
+      - dir::macros/sram22_2048x32m8w8.gds
+    lef:
+      - dir::macros/sram22_2048x32m8w8.lef
+    vh:
+      - dir::macros/sram22_2048x32m8w8.bb.v
+    # Corner libs: typical / slow-slow / fast-fast (matched by OpenLane corner glob).
+    lib:
+      "*_tt_025C_1v80":
+        - dir::macros/sram22_2048x32m8w8_tt_025C_1v80.lib
+      "*_ss_100C_1v60":
+        - dir::macros/sram22_2048x32m8w8_ss_100C_1v60.lib
+      "*_ff_n40C_1v95":
+        - dir::macros/sram22_2048x32m8w8_ff_n40C_1v95.lib
+    nl: []
+    pnl: []
+    spice: []
+    spef: {}
+    sdf: {}

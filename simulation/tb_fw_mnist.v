@@ -19,6 +19,11 @@ module tb_fw_mnist;
     .sram_clk_en(sram_clk_en)
   );
 
+  // Gate-level: zero synthesized regfile (RTL used $readmemb zeros).
+`ifdef GLS_RF_INIT
+  `include "gls_regfile_init.vh"
+`endif
+
 `ifndef IMEM_HEX
   `define IMEM_HEX "imem.hex"
 `endif
@@ -30,10 +35,18 @@ module tb_fw_mnist;
 `endif
 
 `ifdef DUMP_PATH
+  // DUMP_LEVEL / DUMP_MODULE let GLS dump SoC nets only (level 1) without
+  // descending into every stdcell / SRAM mem[] (keeps VCD size usable).
+  `ifndef DUMP_LEVEL
+    `define DUMP_LEVEL 0
+  `endif
+  `ifndef DUMP_MODULE
+    `define DUMP_MODULE tb_fw_mnist
+  `endif
   initial begin
     $dumpfile(`DUMP_PATH);
-    $dumpvars(0, tb_fw_mnist);
-    $display("WAVEFORM: dumping to %s", `DUMP_PATH);
+    $dumpvars(`DUMP_LEVEL, `DUMP_MODULE);
+    $display("WAVEFORM: dumping to %s (level=%0d)", `DUMP_PATH, `DUMP_LEVEL);
   end
 `endif
 

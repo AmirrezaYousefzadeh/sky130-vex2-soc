@@ -1,4 +1,4 @@
-# Firmware (`fw/`)
+# Firmware
 
 Bare-metal RISC-V firmware for `sky130_vex2_soc` (RV32IM, Harvard IMEM/DMEM).
 
@@ -6,10 +6,10 @@ Bare-metal RISC-V firmware for `sky130_vex2_soc` (RV32IM, Harvard IMEM/DMEM).
 
 ```bash
 # needs riscv-none-elf-gcc — see ../setup/install_riscv_toolchain.sh
-make -C fw all
+make -C firmware all
 ```
 
-Produces under `fw/build/`:
+Produces under `firmware/build/`:
 
 - `mnist_mlp.elf` / `.dis` / `.map`
 - `imem.hex`, `dmem.hex` — loaded by the firmware testbench
@@ -19,6 +19,7 @@ Run on the RTL model:
 ```bash
 ./simulation/run_sim.sh fw
 ./simulation/run_sim.sh fw --vcd
+# (aliases: firmware, mnist)
 ```
 
 ## Layout

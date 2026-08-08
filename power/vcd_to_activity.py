@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Extract switching activity from an RTL VCD for OpenSTA power analysis.
+"""Extract switching activity from a VCD for OpenSTA power analysis.
 
 OpenSTA activity = probability of a 0→1 transition per clock cycle.
 Duty = fraction of time the signal is high.
 
-The MNIST VCD is RTL (tb_fw_mnist.u_soc.*). Gate-level names will not match,
-so we export a global activity (and key SoC/SRAM pin rates) for set_power_activity.
+Prefer a gate-level VCD (simulation/run_gls.sh): net names match the post-PnR
+netlist, so the median activity is representative. RTL VCDs still work, but
+unmatched gate nets fall back to that median in OpenSTA.
 """
 from __future__ import annotations
 
@@ -221,12 +222,16 @@ def write_sta_tcl(stats: dict, out: Path, design_period_ns: float) -> None:
     # Prefer median — mean is inflated by a few always-toggling nets.
     g = stats["global_activity_median"]
     g = min(max(g, 0.01), 0.5)
+    src = stats["vcd"]
+    gls = "gls" in Path(src).name.lower() or "gate" in Path(src).name.lower()
     lines = [
-        f"# Auto-generated from {stats['vcd']}",
-        f"# RTL sim cycles={stats['cycles']} @ {stats['sim_period_ns']} ns; "
-        f"power annotated at design period {design_period_ns} ns",
+        f"# Auto-generated from {src}",
+        f"# {'Gate-level' if gls else 'RTL'} sim cycles={stats['cycles']} @ "
+        f"{stats['sim_period_ns']} ns; power annotated at design period "
+        f"{design_period_ns} ns",
         f"set ::mnist_global_activity {g:.6f}",
         f"set ::mnist_design_period_ns {design_period_ns}",
+        f"set ::mnist_vcd_is_gls {'1' if gls else '0'}",
     ]
     for k, v in stats.get("interesting", {}).items():
         lines.append(f"set ::mnist_act({k}) {v['activity']:.6f}")

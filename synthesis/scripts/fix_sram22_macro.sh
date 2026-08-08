@@ -3,11 +3,11 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 OL2="${OPENLANE_ROOT:-/media/hardware_design_tools/openlane2}"
-MACROS="$ROOT/hardening/sky130_vex2_soc/macros"
+MACROS="$ROOT/synthesis/sky130_vex2_soc/macros"
 CELL=sram22_2048x32m8w8
 export PDK_ROOT="${PDK_ROOT:-/media/pdk}"
 
-python3 "$ROOT/hardening/scripts/fix_sram22_macro.py" --macros-dir "$MACROS" --cell "$CELL"
+python3 "$ROOT/synthesis/scripts/fix_sram22_macro.py" --macros-dir "$MACROS" --cell "$CELL"
 
 run_nix() {
   nix --extra-experimental-features "nix-command flakes" develop --accept-flake-config "$OL2" -c "$@"
@@ -46,7 +46,7 @@ layout.dbu = 0.001
 cell = layout.create_cell("sram22_prb_test")
 li = layout.layer(pya.LayerInfo(235, 4))
 cell.shapes(li).insert(pya.DBox(0, 0, 674.48, 781.92).to_itype(layout.dbu))
-layout.write("$ROOT/hardening/sky130_vex2_soc/macros/_tiny_prb.gds")
+layout.write("$ROOT/synthesis/sky130_vex2_soc/macros/_tiny_prb.gds")
 PY
 # path baked above — rewrite with MACROS
 cat >"$TINY_PY" <<PY

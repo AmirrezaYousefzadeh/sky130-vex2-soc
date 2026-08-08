@@ -6,7 +6,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 HARDWARE_TOOLS_ROOT="${HARDWARE_TOOLS_ROOT:-/media/hardware_design_tools}"
 export PATH="$HARDWARE_TOOLS_ROOT/oss-cad-suite/bin:$PATH"
 
-DEF="${1:-$ROOT/hardening/sky130_vex2_soc/runs/sky130_vex2_soc/12-odb-manualmacroplacement/sky130_vex2_soc.def}"
+DEF="${1:-$ROOT/synthesis/sky130_vex2_soc/runs/sky130_vex2_soc/12-odb-manualmacroplacement/sky130_vex2_soc.def}"
 
 if ! command -v klayout >/dev/null 2>&1; then
   echo "klayout not found (expected under $HARDWARE_TOOLS_ROOT/oss-cad-suite/bin)"

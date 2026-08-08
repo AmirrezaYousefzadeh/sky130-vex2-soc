@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 # Activity-based power + energy from a VCD + post-PnR netlist/SPEF.
 #
+# Prefer a gate-level VCD (names match the netlist). RTL VCD still works but
+# unmatched nets fall back to a median activity.
+#
 # Usage:
 #   ./power/run_power.sh path/to/file.vcd
-#   ./power/run_power.sh                          # default: simulation/mnist_mlp.vcd
+#   ./power/run_power.sh                          # prefer simulation/mnist_mlp_gls.vcd
 #
 # Env:
 #   VCD=path                 input waveform
@@ -28,10 +31,16 @@ OL2="${OPENLANE_ROOT:-/media/hardware_design_tools/openlane2}"
 if [[ $# -ge 1 ]]; then
   VCD="$1"
 else
-  VCD="${VCD:-$ROOT/simulation/mnist_mlp.vcd}"
+  if [[ -n "${VCD:-}" ]]; then
+    :
+  elif [[ -f "$ROOT/simulation/mnist_mlp_gls.vcd" ]]; then
+    VCD="$ROOT/simulation/mnist_mlp_gls.vcd"
+  else
+    VCD="$ROOT/simulation/mnist_mlp.vcd"
+  fi
 fi
 
-RUN_DIR="${RUN_DIR:-$ROOT/hardening/sky130_vex2_soc/runs/sky130_vex2_soc_v2}"
+RUN_DIR="${RUN_DIR:-$ROOT/synthesis/sky130_vex2_soc/runs/sky130_vex2_soc_v2}"
 DESIGN_PERIOD_NS="${DESIGN_PERIOD_NS:-40}"
 SCOPE="${SCOPE:-tb_fw_mnist.u_soc}"
 base="$(basename "$VCD" .vcd)"
@@ -41,12 +50,13 @@ ACT_TCL="$OUT/activity.tcl"
 
 if [[ ! -f "$VCD" ]]; then
   echo "ERROR: VCD not found: $VCD" >&2
-  echo "Generate one with: ./simulation/run_sim.sh fw --vcd" >&2
+  echo "Generate a gate-level VCD with: ./simulation/run_gls.sh fw --vcd" >&2
+  echo "Or RTL: ./simulation/run_sim.sh fw --vcd" >&2
   exit 1
 fi
 if [[ ! -d "$RUN_DIR/final" ]]; then
   echo "ERROR: OpenLane run final/ missing: $RUN_DIR" >&2
-  echo "Set RUN_DIR to a completed hardening run." >&2
+  echo "Set RUN_DIR to a completed synthesis run." >&2
   exit 1
 fi
 
@@ -61,7 +71,7 @@ python3 "$POWER/vcd_to_activity.py" "$VCD" \
 
 export RUN_DIR POWER_OUT="$OUT" ACTIVITY_TCL="$ACT_TCL"
 export LIB_SC="$PDK_ROOT/sky130A/libs.ref/sky130_fd_sc_hd/lib/sky130_fd_sc_hd__tt_025C_1v80.lib"
-export LIB_SRAM="$ROOT/hardening/sky130_vex2_soc/macros/sram22_2048x32m8w8_tt_025C_1v80.lib"
+export LIB_SRAM="$ROOT/synthesis/sky130_vex2_soc/macros/sram22_2048x32m8w8_tt_025C_1v80.lib"
 
 echo "==> OpenSTA activity-based power (period=${DESIGN_PERIOD_NS} ns)"
 cd "$ROOT"

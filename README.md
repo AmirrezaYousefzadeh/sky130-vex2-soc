@@ -24,10 +24,10 @@ Open-source path toward a tapeout-oriented RISC-V design on SkyWater 130 nm:
 ```
 setup/          install PDK, Nix, OpenLane, toolchains
 rtl/            CPU, SoC bridges, SRAM behavioral link
-fw/             bare-metal MNIST MLP firmware
-simulation/     Icarus sims + VCD waveforms
-hardening/      OpenLane config + run_harden.sh
-power/          activity-based power / energy from VCD
+firmware/       bare-metal MNIST MLP firmware
+simulation/     Icarus RTL + gate-level sims + VCD waveforms
+synthesis/      OpenLane config + run_synthesis.sh
+power/          activity-based power / energy from VCD (prefer GLS)
 third_party/    VexRiscv, sram22_sky130_macros (fetch via setup/)
 ```
 
@@ -40,18 +40,21 @@ cd setup && ./install_nix.sh && ./install_pdk.sh && ./install_openlane.sh
 cd ..
 source env.sh
 
-# Simulate
+# Simulate (RTL)
 ./simulation/run_sim.sh
 ./simulation/run_sim.sh fw --vcd
 
-# Harden (clock period: hardening/sky130_vex2_soc/config.json → CLOCK_PERIOD)
-./hardening/run_harden.sh
+# Synthesis (clock period: synthesis/sky130_vex2_soc/config.yaml → CLOCK_PERIOD)
+./synthesis/run_synthesis.sh
 
-# Power / energy from a VCD
-./power/run_power.sh ./simulation/mnist_mlp.vcd
+# Gate-level sim → VCD for power (needs final/nl from synthesis)
+./simulation/run_gls.sh fw --vcd
+
+# Power / energy (prefers gate-level VCD when present)
+./power/run_power.sh ./simulation/mnist_mlp_gls.vcd
 ```
 
-Each of `setup/`, `simulation/`, `hardening/`, `power/`, and `fw/` has its own README with parameters.
+Each of `setup/`, `simulation/`, `synthesis/`, `power/`, and `firmware/` has its own README with parameters.
 
 ## Shared paths
 

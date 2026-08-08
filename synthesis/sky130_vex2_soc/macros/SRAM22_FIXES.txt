@@ -14,7 +14,7 @@
 # - LEF: OBS is met1-only (met2 blockage removed)
 #   backup: sram22_2048x32m8w8.lef.pre_pdn_fix
 # - pdn_cfg_sram22.tcl: -grid_over_pg_pins + met2↔met3↔met4 connects
-# - config.json: RUN_IRDROP_REPORT true, ERROR_ON_PDN_VIOLATIONS false
+# - config.yaml: RUN_IRDROP_REPORT true, ERROR_ON_PDN_VIOLATIONS false
 #   (PSM still flags internal SRAM met2 pin islands; OpenLane docs note PSM is
 #   weak on hierarchical macros. After the LEF fix, SPECIALNETS include met2
 #   straps + via2/via3 stacks — previously 0 vias to met2.)

@@ -68,7 +68,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--epochs", type=int, default=3)
     ap.add_argument("--out", type=Path, default=Path(__file__).with_name("weights.h"))
-    ap.add_argument("--data", type=Path, default=Path(__file__).resolve().parents[2] / "fw" / "mnist" / "data")
+    ap.add_argument("--data", type=Path, default=Path(__file__).resolve().parents[2] / "firmware" / "mnist" / "data")
     args = ap.parse_args()
     args.data.mkdir(parents=True, exist_ok=True)
 

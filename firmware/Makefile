@@ -1,6 +1,6 @@
 # Firmware for sky130_vex2_soc
 ROOT      := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))/..)
-FW        := $(ROOT)/fw
+FW        := $(ROOT)/firmware
 BUILD     := $(FW)/build
 MNIST     := $(FW)/mnist
 
@@ -8,7 +8,7 @@ TOOLCHAIN ?= $(ROOT)/tools/riscv-none-elf-gcc/bin/riscv-none-elf
 CC        := $(TOOLCHAIN)-gcc
 OBJDUMP   := $(TOOLCHAIN)-objdump
 SIZE      := $(TOOLCHAIN)-size
-ELF2MEM   := $(ROOT)/fw/scripts/elf2mem.py
+ELF2MEM   := $(ROOT)/firmware/scripts/elf2mem.py
 
 ARCH      := -march=rv32im -mabi=ilp32
 CFLAGS    := $(ARCH) -Os -g -ffreestanding -nostdlib -Wall -Wextra \

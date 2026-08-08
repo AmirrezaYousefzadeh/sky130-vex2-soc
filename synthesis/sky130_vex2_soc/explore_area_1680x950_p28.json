@@ -7,19 +7,19 @@
     "dir::../../rtl/soc/sky130_vex2_soc.v"
   ],
   "CLOCK_PORT": "clk",
-  "CLOCK_PERIOD": 18,
+  "CLOCK_PERIOD": 28,
   "FP_SIZING": "absolute",
   "DIE_AREA": [
     0,
     0,
-    1800,
-    1100
+    1680,
+    950
   ],
   "CORE_AREA": [
-    25.0,
-    25.0,
-    1775.0,
-    1075.0
+    20.0,
+    20.0,
+    1660.0,
+    930.0
   ],
   "FP_PDN_MULTILAYER": true,
   "VDD_NETS": [
@@ -35,11 +35,11 @@
   "ERROR_ON_PDN_VIOLATIONS": false,
   "FP_PDN_CFG": "dir::pdn_cfg_sram22.tcl",
   "RUN_IRDROP_REPORT": false,
-  "FP_PDN_VPITCH": 100,
-  "FP_PDN_HPITCH": 100,
+  "FP_PDN_VPITCH": 80,
+  "FP_PDN_HPITCH": 80,
   "FP_PDN_VSPACING": 15,
   "FP_PDN_HSPACING": 15,
-  "PL_TARGET_DENSITY_PCT": 45,
+  "PL_TARGET_DENSITY_PCT": 50,
   "GPL_CELL_PADDING": 2,
   "DPL_CELL_PADDING": 2,
   "RT_MAX_LAYER": "met5",
@@ -48,26 +48,27 @@
   "RUN_LINTER": false,
   "PRIMARY_GDSII_STREAMOUT_TOOL": "klayout",
   "RUN_MAGIC_STREAMOUT": false,
-  "RUN_MAGIC_WRITE_LEF": true,
+  "RUN_MAGIC_WRITE_LEF": false,
   "RUN_MAGIC_DRC": false,
   "RUN_KLAYOUT_XOR": false,
   "RUN_LVS": false,
   "MAGIC_CAPTURE_ERRORS": false,
   "ERROR_ON_ILLEGAL_OVERLAPS": false,
+  "MAGIC_MACRO_STD_CELL_SOURCE": "macro",
   "MACROS": {
     "sram22_2048x32m8w8": {
       "instances": {
         "u_imem": {
           "location": [
-            50,
-            50
+            40,
+            40
           ],
           "orientation": "N"
         },
         "u_dmem": {
           "location": [
-            974.48,
-            50
+            864.48,
+            40
           ],
           "orientation": "N"
         }

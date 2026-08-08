@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Copy SRAM22 views into hardening/.../macros and apply LEF/GDS patches.
+# Copy SRAM22 views into synthesis/.../macros and apply LEF/GDS patches.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CELL=sram22_2048x32m8w8
 SRC="$ROOT/third_party/sram22_sky130_macros/$CELL"
-DST="$ROOT/hardening/sky130_vex2_soc/macros"
+DST="$ROOT/synthesis/sky130_vex2_soc/macros"
 
 if [[ ! -d "$SRC" ]]; then
   echo "ERROR: missing $SRC — run ./setup/fetch_third_party.sh first" >&2
@@ -28,5 +28,5 @@ elif [[ -f "$SRC/${CELL}.gds" ]]; then
 fi
 
 echo "Patching macro for OpenLane/Magic PR-boundary + PDN…"
-bash "$ROOT/hardening/scripts/fix_sram22_macro.sh"
+bash "$ROOT/synthesis/scripts/fix_sram22_macro.sh"
 echo "Done."

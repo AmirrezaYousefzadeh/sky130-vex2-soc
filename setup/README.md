@@ -1,6 +1,6 @@
 # Setup (PDK + tools)
 
-Scripts to prepare the shared SkyWater PDK and EDA tooling used by simulation, hardening, and power.
+Scripts to prepare the shared SkyWater PDK and EDA tooling used by simulation, synthesis, and power.
 
 Default install roots (override with env vars):
 
@@ -37,7 +37,7 @@ sudo bash ./sudo_setup_media_tools.sh
 ./install_oss_cad_suite.sh    # iverilog, yosys, gtkwave, …
 ./install_riscv_toolchain.sh  # riscv-none-elf-gcc → ../tools/
 ./fetch_third_party.sh        # VexRiscv + SRAM22 macro sources
-./prepare_macros.sh           # LEF/GDS/LIB into hardening/.../macros
+./prepare_macros.sh           # LEF/GDS/LIB into synthesis/.../macros
 ```
 
 ## Scripts
@@ -52,7 +52,7 @@ sudo bash ./sudo_setup_media_tools.sh
 | `install_oss_cad_suite.sh` | download OSS CAD Suite into tools root |
 | `install_riscv_toolchain.sh` | xPack RISC-V GCC under `../tools/` |
 | `fetch_third_party.sh` | clone VexRiscv + sram22_sky130_macros |
-| `prepare_macros.sh` | copy/patch SRAM22 LEF/GDS/LIB into hardening macros |
+| `prepare_macros.sh` | copy/patch SRAM22 LEF/GDS/LIB into synthesis macros |
 
 ## Parameters / knobs
 
@@ -64,4 +64,4 @@ sudo bash ./sudo_setup_media_tools.sh
 | `OPENLANE_ROOT` | harden / power | OpenLane 2 checkout |
 | `OPEN_PDKS_REV` | `install_pdk.sh` | pin open_pdks git rev for volare |
 
-Clock period and floorplan knobs for the chip itself are **not** here — they live in `../hardening/sky130_vex2_soc/config.json` (`CLOCK_PERIOD`, etc.).
+Clock period and floorplan knobs for the chip itself are **not** here — they live in `../synthesis/sky130_vex2_soc/config.yaml` (`CLOCK_PERIOD`, etc.).
