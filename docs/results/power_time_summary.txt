@@ -1,0 +1,15 @@
+Time-based power summary (activity / OpenSTA, µW)
+vcd_source     : simulation/waveform_gls.vcd
+n_windows      : 1000
+timescale      : 1ns
+t_range        : 0 .. 1386550
+top_avg_uW     : 8826.7
+top_peak_uW    : 15777  (window 772, t=[1070416,1071803))
+top_min_uW     : 76
+
+Blocks (depth=1): top, u_imem, u_dmem, logic(=top-macros).
+static = OpenSTA Leakage; total = OpenSTA Total.
+Sleep: core ICG GATE case-analyzed from VCD sram_clk_en duty.
+
+Regenerated with:
+  ./power/run_time_power.sh ./simulation/waveform_gls.vcd

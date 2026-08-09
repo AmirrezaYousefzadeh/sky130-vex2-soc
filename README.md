@@ -16,6 +16,39 @@ Open-source path toward a tapeout-oriented RISC-V design on SkyWater 130 nm:
 
 <p align="center"><em>Always-on <code>clk</code>, core sleep, MNIST inference, and total power (µW) vs time</em></p>
 
+## Results (checked-in snapshot)
+
+GLS VCD → OpenSTA activity power at **50 MHz** (TT 1.8 V), plus post-PnR area.
+Raw files under [`docs/results/`](docs/results/).
+
+### Average power / energy (one MNIST inference run)
+
+| Metric | Value |
+|--------|--------|
+| Blended average power | **9.12 mW** |
+| Awake / sleep power | 12.75 mW / **0.19 mW** |
+| Core clock-enable duty | 0.711 |
+| Energy / inference | **12.65 µJ** |
+| Runtime @ 50 MHz | 1.39 ms (69 328 cycles) |
+
+Group breakdown (blended): clock 44.8%, sequential 38.4%, macro 11.9%, combo 4.9%.
+
+### Time-windowed power (N = 1000)
+
+| Metric | Value |
+|--------|--------|
+| Window-average total | 8.83 mW |
+| Peak window / min window | 15.78 mW / **0.076 mW** |
+
+### Area / timing
+
+| Metric | Value |
+|--------|--------|
+| Consumed area (cells + macros) | **1.422 mm²** |
+| Stdcells / SRAM macros | 0.367 / 1.055 mm² |
+| Die outline (floorplan) | 4.000 mm² |
+| Clock / implied Fmax | 50 MHz target / **53.0 MHz** (setup+hold MET) |
+
 ## Locked choices
 
 | Block | Choice | Notes |
@@ -48,6 +81,7 @@ simulation/     Icarus RTL + gate-level sims + VCD waveforms
 synthesis/      OpenLane config + run_synthesis.sh
 power/          average + time-windowed OpenSTA power from VCD
 docs/figures/   floorplan + power-timeline plots
+docs/results/   average power, time-power, area/timing snapshots
 third_party/    VexRiscv, sram22_sky130_macros (fetch via setup/)
 ```
 

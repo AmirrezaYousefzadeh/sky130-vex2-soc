@@ -18,6 +18,9 @@ Two flows share the same VCD + OpenLane netlist/SPEF + OpenSTA activity model.
 
 Outputs under `power/out_<vcd_basename>/`: `power_energy.txt`, `power_activity.rpt`, `activity.json`, …
 
+Checked-in snapshot of the GLS MNIST run: [`../docs/results/power_energy.txt`](../docs/results/power_energy.txt)
+(also summarized in `mnist_mlp/SUMMARY.txt` and the root README).
+
 ## Time-based power (windowed timeline)
 
 ```bash

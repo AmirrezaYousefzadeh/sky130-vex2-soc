@@ -1,0 +1,29 @@
+sky130_vex2_soc — synthesis results (checked-in snapshot)
+stdcells (netlist): sky130_fd_sc_ms
+
+Cells
+  total instances     : 63776
+  stdcells            : 63774
+  macros              : 2
+
+Estimated consumed area (instance area)
+  total               : 1,421,860.00 µm² (1.4219 mm²)
+  stdcells            : 367,080.00 µm² (0.3671 mm²)
+  macros              : 1,054,780.00 µm² (1.0548 mm²)
+  die outline (ref)   : 4,000,000.00 µm² (4.0000 mm²)
+  core outline (ref)  : 3,830,920.00 µm² (3.8309 mm²)
+
+Timing constraints (clock)
+  clock period        : 20.000 ns  (50.00 MHz target)
+  setup slack (WNS)   : +1.1254 ns  (aggregate)  → MET
+  setup violations    : 0
+  critical path       : 18.8746 ns
+  implied Fmax (path) : 52.98 MHz
+  hold slack (WNS)    : +0.0480 ns  (aggregate)  → MET
+  hold violations     : 0
+
+RESULT: PASS — clock setup/hold constraints MET
+
+Notes
+  Consumed area = OpenLane design__instance__area (cells + macros), not die size.
+  Regenerated locally by ./synthesis/run_synthesis.sh → synthesis_results.txt (gitignored).
