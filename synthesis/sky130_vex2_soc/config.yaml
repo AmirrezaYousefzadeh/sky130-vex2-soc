@@ -9,6 +9,8 @@ VERILOG_FILES:
   - dir::../../rtl/cpu/VexRiscv2.v
   - dir::../../rtl/soc/ibus_sram22_bridge.v
   - dir::../../rtl/soc/dbus_sram22_bridge.v
+  - dir::../../rtl/soc/clk_gate.v
+  - dir::../../rtl/soc/sleep_ctrl.v
   - dir::../../rtl/soc/sky130_vex2_soc.v
 
 # Timing target: port name + period in ns
@@ -82,6 +84,15 @@ MAGIC_CAPTURE_ERRORS: false
 ERROR_ON_ILLEGAL_OVERLAPS: false
 # Prefer macro LEF geometry over stdcell-derived outlines when Magics writes LEF.
 MAGIC_MACRO_STD_CELL_SOURCE: macro
+
+# OpenROAD.RepairAntennas (timing-driven diode+GRT) segfaults on this design
+# (Signal 11 in FastRoute CalculatePartialSlack). Use heuristic diodes instead.
+RUN_ANTENNA_REPAIR: false
+RUN_HEURISTIC_DIODE_INSERTION: true
+
+# Extra hold margin through resizer (clk vs gated core_clk skew is nasty).
+PL_RESIZER_HOLD_SLACK_MARGIN: 0.1
+GRT_RESIZER_HOLD_SLACK_MARGIN: 0.1
 
 # Hard macros (SRAM22). Instances get fixed floorplan locations (µm) + orientations.
 # gds/lef/vh/lib views live under macros/ (see scripts/fix_sram22_macro.sh).

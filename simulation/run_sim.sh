@@ -57,6 +57,9 @@ RTL=(
   "$ROOT/rtl/sram/sram22_2048x32m8w8.v"
   "$ROOT/rtl/soc/ibus_sram22_bridge.v"
   "$ROOT/rtl/soc/dbus_sram22_bridge.v"
+  "$SIM/sky130_dlclkp_stub.v"
+  "$ROOT/rtl/soc/clk_gate.v"
+  "$ROOT/rtl/soc/sleep_ctrl.v"
   "$ROOT/rtl/soc/sky130_vex2_soc.v"
 )
 

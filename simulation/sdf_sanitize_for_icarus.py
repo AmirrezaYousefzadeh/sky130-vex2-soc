@@ -12,6 +12,9 @@ Icarus-friendly subset:
     ``&`` / ``!`` confuse Icarus)
   - Drop IOPATHs with bit-selects (``dout[0]`` etc.; SRAM macros abort parse)
   - Drop empty DELAY/ABSOLUTE cells (e.g. top-level / macros after filtering)
+  - Rewrite flattened INSTANCE names: OpenROAD ``u_foo\\.u_bar`` → Verilog
+    escaped ``\\u_foo.u_bar`` (matches netlist cells; otherwise Icarus reports
+    ``Cannot find u_foo``)
 
 Keeps stdcell IOPATH delays so combo skew / glitches are still modeled.
 """
@@ -20,6 +23,23 @@ from __future__ import annotations
 import argparse
 import re
 from pathlib import Path
+
+# OpenROAD escape for '.' inside a flattened instance leaf name.
+_INSTANCE_FLAT = re.compile(
+    r"(\(INSTANCE\s+)((?:[A-Za-z_][A-Za-z0-9_$]*\\.)+[A-Za-z_][A-Za-z0-9_$]*)(\s*\))"
+)
+
+
+def _fix_flat_instance(line: str) -> tuple[str, bool]:
+    """Map ``(INSTANCE a\\.b)`` → ``(INSTANCE \\a.b )`` for Icarus."""
+
+    def repl(m: re.Match[str]) -> str:
+        path = m.group(2).replace("\\.", ".")
+        # Trailing space terminates the Verilog escaped identifier.
+        return f"{m.group(1)}\\{path} {m.group(3).lstrip()}"
+
+    new, n = _INSTANCE_FLAT.subn(repl, line)
+    return new, n > 0
 
 
 def _fix_header(line: str) -> str:
@@ -57,6 +77,7 @@ def sanitize(src: Path, dst: Path) -> dict[str, int]:
         "unwrapped_cond": 0,
         "dropped_bitselect_iopath": 0,
         "dropped_empty_cells": 0,
+        "fixed_flat_instances": 0,
     }
 
     # Pass 1: line filters + TIMINGCHECK block skip + COND unwrap
@@ -72,6 +93,13 @@ def sanitize(src: Path, dst: Path) -> dict[str, int]:
                 stats["header_fixes"] += 1
             line = fixed
             stripped = line.lstrip()
+
+        if "\\." in line and stripped.startswith("(INSTANCE"):
+            fixed, did = _fix_flat_instance(line)
+            if did:
+                stats["fixed_flat_instances"] += 1
+                line = fixed
+                stripped = line.lstrip()
 
         if stripped.startswith("(INTERCONNECT"):
             stats["dropped_interconnect"] += 1

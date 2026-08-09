@@ -1,5 +1,5 @@
 # MNIST MLP activity-based power summary (example)
-# Regenerated with: ./power/run_power.sh ./simulation/mnist_mlp.vcd
+# Regenerated with: ./power/run_avg_power.sh ./simulation/mnist_mlp.vcd
 #
 # Method: RTL VCD toggle rates → OpenSTA set_power_activity on post-PnR
 #         netlist + SPEF, TT 1.8 V / 25 C.

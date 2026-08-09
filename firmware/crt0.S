@@ -1,4 +1,7 @@
-/* Minimal startup for sky130_vex2_soc (RV32IM, bare metal). */
+/* Minimal startup + IRQ stub for sky130_vex2_soc (RV32IM, bare metal).
+ *
+ * Reset / _start at 0x0. Machine external interrupt vector (mtvec) at 0x80.
+ */
   .section .text.init, "ax", @progbits
   .global _start
   .type   _start, @function
@@ -31,3 +34,11 @@ _start:
 5:
   j    5b
   .size _start, .-_start
+
+  .section .text.irq, "ax", @progbits
+  .global _irq_entry
+  .type   _irq_entry, @function
+_irq_entry:
+  /* Kept for mtvec=0x80; wake is clock-ungate only (ext_irq tied off). */
+  mret
+  .size _irq_entry, .-_irq_entry

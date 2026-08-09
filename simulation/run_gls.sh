@@ -216,9 +216,11 @@ GLS_SRCS+=(
 compile_and_run() {
   local vvp="$1"
   shift
+  local timeout_cyc="${TIMEOUT_CYCLES:-5000000}"
   echo "==> Compiling (warnings → $OUT/iverilog_warn.log) ..."
   # Timing-check "not supported" spam from the PDK; keep a log, show errors only.
   if ! iverilog "${IVERILOG_FLAGS[@]}" -o "$vvp" \
+      -DGLS_PROGRESS \
       "${GLS_DEFS[@]}" \
       "$@" \
       "${GLS_SRCS[@]}" \
@@ -231,14 +233,17 @@ compile_and_run() {
   nwarn="$(grep -c 'warning:' "$OUT/iverilog_warn.log" 2>/dev/null || echo 0)"
   echo "    iverilog ok ($nwarn warnings logged)"
   echo "==> Running $vvp ..."
+  local progress=(python3 "$SIM/gls_progress.py" --timeout-cycles "$timeout_cyc")
   if [[ "$NO_SDF" == "1" ]]; then
-    vvp "$vvp"
+    "${progress[@]}" -- vvp "$vvp"
   else
-    echo "    (SDF annotation in progress — may be slow; log: $OUT/sdf_annotate.log)"
+    echo "    (SDF: Icarus is silent until annotate finishes — often 5–20+ min;"
+    echo "     then cycle %/ETA. Log: $OUT/sdf_annotate.log)"
+    progress+=(--sdf-log "$OUT/sdf_annotate.log")
     if [[ "${SDF_VERBOSE:-0}" == "1" ]]; then
-      vvp "$vvp" -sdf-verbose 2>"$OUT/sdf_annotate.log"
+      "${progress[@]}" -- vvp "$vvp" -sdf-verbose
     else
-      vvp "$vvp" 2>"$OUT/sdf_annotate.log"
+      "${progress[@]}" -- vvp "$vvp"
     fi
     if grep -qE 'SDF ERROR|VPI error' "$OUT/sdf_annotate.log" 2>/dev/null; then
       local nerr
@@ -254,7 +259,7 @@ case "$MODE" in
   smoke)
     VCD_PATH="$SIM/$VCD_NAME"
     echo "==> GLS smoke compile (netlist: $NETLIST)"
-    compile_and_run soc_gls.vvp \
+    TIMEOUT_CYCLES=10000 compile_and_run soc_gls.vvp \
       -DDUMP_PATH="\"$VCD_PATH\"" \
       -DDUMP_LEVEL="$DUMP_LEVEL" \
       -DDUMP_MODULE=tb_sky130_vex2_soc.u_soc \
@@ -279,7 +284,7 @@ case "$MODE" in
     fi
     TIMEOUT="${TIMEOUT_CYCLES:-5000000}"
     echo "==> GLS firmware compile (netlist: $NETLIST)"
-    compile_and_run fw_mnist_gls.vvp \
+    TIMEOUT_CYCLES="$TIMEOUT" compile_and_run fw_mnist_gls.vvp \
       -DIMEM_HEX="\"imem.hex\"" \
       -DDMEM_HEX="\"dmem.hex\"" \
       -DTIMEOUT_CYCLES="$TIMEOUT" \
@@ -289,7 +294,7 @@ case "$MODE" in
       python3 "$SIM/vcd_rescale_ns.py" "$VCD_PATH"
       ln -sfn "$VCD_NAME" "$SIM/latest_gls.vcd"
       echo "Gate-level waveform: $VCD_PATH"
-      echo "Power: ./power/run_power.sh $VCD_PATH"
+      echo "Power: ./power/run_avg_power.sh $VCD_PATH"
     fi
     ;;
   -h|--help|help)

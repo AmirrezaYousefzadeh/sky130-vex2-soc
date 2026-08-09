@@ -48,6 +48,13 @@ if { $rst_indx >= 0 } {
     set all_inputs_wo_clk_rst $all_inputs_wo_clk
 }
 
+# wake is an async TB/SoC interrupt into the sleep controller
+set wake_input [get_ports wake]
+set wake_indx [lsearch $all_inputs_wo_clk_rst $wake_input]
+if { $wake_indx >= 0 } {
+    set all_inputs_wo_clk_rst [lreplace $all_inputs_wo_clk_rst $wake_indx $wake_indx ""]
+}
+
 set clocks [get_clocks $clock_port]
 
 set_input_delay $input_delay_value -clock $clocks $all_inputs_wo_clk_rst
@@ -56,6 +63,18 @@ set_output_delay $output_delay_value -clock $clocks [all_outputs]
 # Async reset: not a synchronous data path (also drives SRAM rstb enable, not array clear).
 set_false_path -from [get_ports reset]
 puts "\[INFO] set_false_path -from \[get_ports reset\] (async reset)"
+set_false_path -from [get_ports wake]
+puts "\[INFO] set_false_path -from \[get_ports wake\] (async wake)"
+
+# Always-on sleep FSM (ungated clk) <-> gated core_clk domain: intentional CDC.
+# Hold fails if STA treats these as same-edge paths through the ICG delay.
+foreach c {u_sleep/sleeping u_sleep/wake_meta u_sleep/wake_sync u_sleep/wake_sync_d u_sleep/sleep_req_d} {
+    if { [llength [get_cells -quiet $c]] > 0 } {
+        set_false_path -from [get_cells $c]
+        set_false_path -to   [get_cells $c]
+    }
+}
+puts "\[INFO] set_false_path on u_sleep always-on <-> core CDC flops"
 
 if { ![info exists ::env(SYNTH_CLK_DRIVING_CELL)] } {
     set ::env(SYNTH_CLK_DRIVING_CELL) $::env(SYNTH_DRIVING_CELL)

@@ -62,10 +62,32 @@ def parse_instance_report_total(rpt: Path | None) -> float | None:
     return None
 
 
+def _enable_duty(interesting: dict) -> float | None:
+    for key in ("sram_clk_en", "core_clk_en"):
+        v = interesting.get(key)
+        if isinstance(v, dict) and "duty" in v:
+            return float(v["duty"])
+    return None
+
+
+def _blend_groups(awake: dict[str, float], sleep: dict[str, float], duty: float) -> dict[str, float]:
+    keys = set(awake) | set(sleep)
+    out: dict[str, float] = {}
+    for k in keys:
+        a = awake.get(k, 0.0)
+        s = sleep.get(k, 0.0)
+        out[k] = duty * a + (1.0 - duty) * s
+    return out
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--activity-json", type=Path, required=True)
     ap.add_argument("--power-rpt", type=Path, required=True)
+    ap.add_argument("--awake-rpt", type=Path, default=None,
+                    help="OpenSTA report with core ICG GATE=1 (default: sibling power_awake.rpt)")
+    ap.add_argument("--sleep-rpt", type=Path, default=None,
+                    help="OpenSTA report with core ICG GATE=0 (default: sibling power_sleep.rpt)")
     ap.add_argument("--clock-rpt", type=Path, default=None)
     ap.add_argument("--design-period-ns", type=float, required=True)
     ap.add_argument("-o", "--output", type=Path, required=True)
@@ -77,7 +99,34 @@ def main() -> None:
     median = float(act.get("global_activity_median") or 0.0)
     interesting = act.get("interesting") or {}
 
-    groups = parse_group_watts(args.power_rpt)
+    awake_rpt = args.awake_rpt
+    sleep_rpt = args.sleep_rpt
+    if awake_rpt is None:
+        cand = args.power_rpt.with_name("power_awake.rpt")
+        if cand.is_file():
+            awake_rpt = cand
+    if sleep_rpt is None:
+        cand = args.power_rpt.with_name("power_sleep.rpt")
+        if cand.is_file():
+            sleep_rpt = cand
+
+    duty = _enable_duty(interesting)
+    blended = False
+    if (
+        awake_rpt is not None
+        and sleep_rpt is not None
+        and awake_rpt.is_file()
+        and sleep_rpt.is_file()
+        and duty is not None
+    ):
+        groups = _blend_groups(parse_group_watts(awake_rpt), parse_group_watts(sleep_rpt), duty)
+        blended = True
+        p_awake = parse_group_watts(awake_rpt).get("Total")
+        p_sleep = parse_group_watts(sleep_rpt).get("Total")
+    else:
+        groups = parse_group_watts(args.power_rpt)
+        p_awake = p_sleep = None
+
     p_w = groups.get("Total", parse_total_watts(args.power_rpt))
     design_period_ns = float(args.design_period_ns)
     f_hz = 1e9 / design_period_ns if design_period_ns else 0.0
@@ -91,14 +140,28 @@ def main() -> None:
     lines.append(f"activity_median     : {median:.6f} / cycle  (data path; clock uses create_clock)")
     for k, v in interesting.items():
         if isinstance(v, dict) and "activity" in v:
-            lines.append(f"  {k:18s}: {v['activity']:.6f}")
+            extra = ""
+            if "duty" in v:
+                extra = f"  duty={v['duty']:.6f}"
+            lines.append(f"  {k:18s}: act={v['activity']:.6f}{extra}")
     lines.append("")
 
     if p_w is None:
         lines.append("power_total         : (could not parse OpenSTA report)")
         lines.append(f"see                  : {args.power_rpt}")
     else:
-        lines.append(f"power_total         : {p_w * 1e3:.6f} mW  ({p_w:.6e} W)")
+        if blended and duty is not None:
+            lines.append(
+                f"power_total         : {p_w * 1e3:.6f} mW  ({p_w:.6e} W)  "
+                f"[blended: duty*P_awake+(1-duty)*P_sleep]"
+            )
+            lines.append(f"core_clk_en_duty    : {duty:.6f}")
+            if p_awake is not None:
+                lines.append(f"power_awake         : {p_awake * 1e3:.6f} mW  (core ICG GATE=1)")
+            if p_sleep is not None:
+                lines.append(f"power_sleep         : {p_sleep * 1e3:.6f} mW  (core ICG GATE=0)")
+        else:
+            lines.append(f"power_total         : {p_w * 1e3:.6f} mW  ({p_w:.6e} W)")
         for g in ("Sequential", "Combinational", "Clock", "Macro", "Pad"):
             if g in groups:
                 gw = groups[g]
@@ -109,7 +172,7 @@ def main() -> None:
         if clk_named is not None:
             lines.append(
                 f"  clock_tree_named  : {clk_named * 1e3:.6f} mW  "
-                f"(sum of *clkbuf*/clkinv/clkdly* cells; see power_clock_tree.rpt)"
+                f"(sum of *clkbuf*/clkinv/clkdly* cells; awake; see power_clock_tree.rpt)"
             )
 
         if cycles > 0 and design_period_ns > 0:
@@ -123,6 +186,11 @@ def main() -> None:
                 "Clock tree: OpenSTA Clock group from create_clock + "
                 "set_propagated_clock + SPEF (not VCD median)."
             )
+            if blended:
+                lines.append(
+                    "Sleep: core ICG GATE case-analyzed; average is duty-weighted "
+                    "blend of awake/sleep reports (set_power_activity on GATE is ignored)."
+                )
             lines.append("Liberty / period should match the hardened run (TT 1.8 V).")
 
     args.output.write_text("\n".join(lines) + "\n")

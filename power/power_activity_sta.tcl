@@ -36,6 +36,12 @@ create_clock -name clk -period $period -waveform [list 0.0 $half] [get_ports clk
 # instead of getting data-path median activity as plain combo cells.
 set_propagated_clock [get_clocks clk]
 
+# Sleep derating via core ICG case analysis (see power_icg_utils.tcl).
+source [file join $::env(ROOT) power power_icg_utils.tcl]
+set ::power_core_icg_gate [power_find_core_icg_gate]
+set en_duty [power_core_enable_duty_from_avg]
+puts "core_icg_gate=$::power_core_icg_gate core_clk_en_duty=$en_duty"
+
 # Default activity for unmatched *data* pins (from VCD median).
 # Clock pins / clock-network cells keep origin=clock (baked in by OpenSTA).
 set_power_activity -global -activity $::mnist_global_activity -duty 0.5
@@ -67,10 +73,24 @@ foreach inst {u_imem u_dmem} {
 }
 
 file mkdir $OUT
-report_power -digits 6 > $OUT/power_activity.rpt
-report_power -instances [get_cells -hierarchical *] -digits 4 > $OUT/power_by_instance.rpt
+
+# Always-on root clk vs gated core_clk: OpenSTA cannot take fractional GATE
+# activity for power. Report awake (GATE=1) and sleep (GATE=0); Python blends
+# by VCD sram_clk_en duty → power_activity.rpt / energy summary.
+power_apply_core_clk_enable 1.0
+report_power -digits 6 > $OUT/power_awake.rpt
+report_power -instances [get_cells -hierarchical *] -digits 4 > $OUT/power_by_instance_awake.rpt
+
+power_apply_core_clk_enable 0.0
+report_power -digits 6 > $OUT/power_sleep.rpt
+
+# Keep primary report as awake (legacy consumers); summarize_energy blends.
+file copy -force $OUT/power_awake.rpt $OUT/power_activity.rpt
+file copy -force $OUT/power_by_instance_awake.rpt $OUT/power_by_instance.rpt
 
 # CTS cells are often named _NNNN_ in the flat netlist; match by liberty ref_name.
+# Report with core awake so clock-tree power is meaningful.
+power_apply_core_clk_enable 1.0
 set clk_tree_cells {}
 foreach cell [get_cells -quiet -hierarchical *] {
   set ref [get_property $cell ref_name]
@@ -98,7 +118,11 @@ if {[catch {report_activity_annotation > $OUT/activity_annotation.rpt} err]} {
 }
 
 puts "WROTE $OUT/power_activity.rpt"
+puts "WROTE $OUT/power_awake.rpt"
+puts "WROTE $OUT/power_sleep.rpt"
 puts "WROTE $OUT/power_clock_tree.rpt"
 puts "global_activity=$::mnist_global_activity period_ns=$period"
+puts "core_clk_en_duty=$en_duty"
 puts "clock: propagated, waveform={0 $half}, period=$period ns"
+puts "sleep: blended in summarize_energy.py as duty*P_awake+(1-duty)*P_sleep"
 exit

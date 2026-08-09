@@ -6,10 +6,13 @@
 #
 # Clock tree: OpenSTA derives activity from create_clock + set_propagated_clock
 # (cannot set_power_activity on clock ports). Matching liberty + period matter.
+# Sleep: core ICG GATE is case-analyzed from VCD sram_clk_en duty; average power
+# blends awake/sleep reports (see power_icg_utils.tcl / summarize_energy.py).
 #
 # Usage:
-#   ./power/run_power.sh path/to/file.vcd
-#   ./power/run_power.sh                          # prefer simulation/waveform_gls.vcd
+#   ./power/run_avg_power.sh path/to/file.vcd
+#   ./run_avg_power.sh ../simulation/waveform_gls.vcd
+#   ./power/run_avg_power.sh                      # prefer simulation/waveform_gls.vcd
 #
 # Env:
 #   VCD=path                 input waveform
@@ -135,7 +138,7 @@ echo "    STD_CELL_LIBRARY=$STD_CELL_LIBRARY"
 echo "    DESIGN_PERIOD_NS=$DESIGN_PERIOD_NS"
 echo "    LIB_SC=$LIB_SC"
 
-echo "==> Extracting activity from $VCD"
+echo "==> [1/3] Extracting activity from $VCD"
 python3 "$POWER/vcd_to_activity.py" "$VCD" \
   --scope "$SCOPE" \
   --design-period-ns "$DESIGN_PERIOD_NS" \
@@ -146,12 +149,15 @@ export RUN_DIR POWER_OUT="$OUT" ACTIVITY_TCL="$ACT_TCL"
 export LIB_SC
 export LIB_SRAM="$ROOT/synthesis/sky130_vex2_soc/macros/sram22_2048x32m8w8_tt_025C_1v80.lib"
 
-echo "==> OpenSTA activity-based power (period=${DESIGN_PERIOD_NS} ns)"
+echo "==> [2/3] OpenSTA activity-based power (period=${DESIGN_PERIOD_NS} ns)"
+echo "    (loading liberty/netlist/SPEF — may take a minute; no per-% bar here)"
 cd "$ROOT"
 nix --extra-experimental-features "nix-command flakes" develop --accept-flake-config \
   "$OL2" -c \
   sta -no_splash -exit "$POWER/power_activity_sta.tcl"
+echo "    OpenSTA done"
 
+echo "==> [3/3] Summarizing energy"
 python3 "$POWER/summarize_energy.py" \
   --activity-json "$ACT_JSON" \
   --power-rpt "$OUT/power_activity.rpt" \
@@ -163,6 +169,8 @@ echo
 echo "Reports:"
 echo "  $OUT/power_energy.txt"
 echo "  $OUT/power_activity.rpt"
+echo "  $OUT/power_awake.rpt"
+echo "  $OUT/power_sleep.rpt"
 echo "  $OUT/power_clock_tree.rpt"
 echo "  $OUT/activity.json"
 echo

@@ -41,6 +41,7 @@ Run on the RTL model:
 | tohost | `0x2000_0000` | write nonzero → halt + gate SRAM clocks |
 
 PASS code: `tohost = predicted_digit + 1` (digits 0..9 → codes 1..10).
+Schedule: init → sleep 10k → one inference → sleep 10k → halt (TB times sleeps).
 
 ## Toolchain
 

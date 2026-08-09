@@ -13,29 +13,50 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import sys
+import time
 from collections import defaultdict
 from pathlib import Path
+
+
+ALIASES = {
+    "imem_ce": ("imem_ce", "u_imem.ce"),
+    "dmem_ce": ("dmem_ce", "u_dmem.ce"),
+    "dmem_we": ("dmem_we", "u_dmem.we"),
+    "imem_we": ("imem_we", "u_imem.we"),
+    # sram_clk_en is the SoC port tied to core_clk_en (sleep ICG GATE).
+    "sram_clk_en": ("sram_clk_en", "core_clk_en"),
+    "halted": ("halted",),
+    "reset": ("reset",),
+}
+
+
+def _progress(msg: str, *, nl: bool = True) -> None:
+    end = "\n" if nl else ""
+    print(msg, end=end, file=sys.stderr, flush=True)
 
 
 def parse_vcd_activity(path: Path, scope_prefix: str, clk_name: str) -> dict:
     # id -> (width, hier_name)
     id_meta: dict[str, tuple[int, str]] = {}
-    # id -> current int value (bitwise for vectors tracked as whole; we expand bits)
+    # id -> current int value
     values: dict[str, int] = {}
     rises: dict[str, int] = defaultdict(int)
     falls: dict[str, int] = defaultdict(int)
+    # Duty only needed for a handful of ports we hand to OpenSTA — not all nets.
     high_time: dict[str, int] = defaultdict(int)
+    duty_ids: set[str] = set()
     last_t = 0
     t = 0
     in_defs = True
     scopes: list[str] = []
     clk_id = None
     clk_rises = 0
-    clk_prev = None
 
     var_re = re.compile(
         r"^\$var\s+\S+\s+(\d+)\s+(\S+)\s+(\S+)(?:\s+\[[0-9]+:[0-9]+\])?\s+\$end"
     )
+    alias_shorts = {n for names in ALIASES.values() for n in names}
 
     def hier(name: str) -> str:
         return ".".join(scopes + [name]) if scopes else name
@@ -43,8 +64,49 @@ def parse_vcd_activity(path: Path, scope_prefix: str, clk_name: str) -> dict:
     def in_scope(h: str) -> bool:
         return h == scope_prefix or h.startswith(scope_prefix + ".")
 
+    size = path.stat().st_size
+    size_mb = max(size / 1e6, 1e-6)
+    t_wall0 = time.time()
+    next_pct = 5
+    last_prog_wall = t_wall0
+    bar_w = 28
+
+    def show_progress(*, force: bool = False) -> None:
+        nonlocal next_pct, last_prog_wall
+        now = time.time()
+        pos = f.tell()
+        pct = int(100 * pos / size) if size > 0 else 100
+        # Update on 5% boundaries or every ~2s so the bar is visible in terminals
+        # that do not render carriage-return well.
+        if not force and pct < next_pct and (now - last_prog_wall) < 2.0:
+            return
+        while next_pct <= pct:
+            next_pct += 5
+        elapsed = max(now - t_wall0, 1e-6)
+        mb_s = (pos / 1e6) / elapsed
+        remain = max(size - pos, 0)
+        eta = remain / (pos / elapsed) if pos > 0 else 0.0
+        eta_m, eta_s = divmod(int(eta), 60)
+        fill = min(bar_w, int(bar_w * pct / 100))
+        bar = "#" * fill + "-" * (bar_w - fill)
+        _progress(
+            f"  [{bar}] {pct:3d}%  "
+            f"{pos/1e6:.0f}/{size_mb:.0f} MB  "
+            f"{mb_s:.1f} MB/s  ETA {eta_m}m{eta_s:02d}s  "
+            f"t={t}  cyc~{clk_rises}"
+        )
+        last_prog_wall = now
+
+    _progress(f"==> Parsing VCD activity ({size_mb:.0f} MB): {path}")
+
     with path.open("r", errors="replace") as f:
-        for line in f:
+        while True:
+            line = f.readline()
+            if not line:
+                break
+
+            show_progress()
+
             line = line.strip()
             if not line:
                 continue
@@ -69,6 +131,13 @@ def parse_vcd_activity(path: Path, scope_prefix: str, clk_name: str) -> dict:
                             id_meta[vid] = (width, h)
                         if h == f"{scope_prefix}.{clk_name}":
                             clk_id = vid
+                        short = (
+                            h[len(scope_prefix) + 1 :]
+                            if h.startswith(scope_prefix + ".")
+                            else h
+                        )
+                        if width == 1 and short in alias_shorts:
+                            duty_ids.add(vid)
                 elif line.startswith("$enddefinitions"):
                     in_defs = False
                     if clk_id is None:
@@ -78,6 +147,10 @@ def parse_vcd_activity(path: Path, scope_prefix: str, clk_name: str) -> dict:
                                 break
                     if clk_id is None:
                         raise SystemExit("Could not find clk in VCD scope")
+                    _progress(
+                        f"  signals in scope: {len(id_meta)}  "
+                        f"(duty-tracked ports: {len(duty_ids)})"
+                    )
                 continue
 
             if line.startswith("#"):
@@ -85,11 +158,11 @@ def parse_vcd_activity(path: Path, scope_prefix: str, clk_name: str) -> dict:
                 dt = newt - last_t
                 if dt < 0:
                     raise SystemExit(f"time went backwards at {newt}")
-                # accumulate duty for known scalar bits
-                for vid, val in values.items():
-                    w, _ = id_meta[vid]
-                    if w == 1 and val == 1:
-                        high_time[vid] += dt
+                # Only accumulate duty for ports we pass to OpenSTA.
+                if dt and duty_ids:
+                    for vid in duty_ids:
+                        if values.get(vid) == 1:
+                            high_time[vid] += dt
                 last_t = newt
                 t = newt
                 continue
@@ -123,7 +196,13 @@ def parse_vcd_activity(path: Path, scope_prefix: str, clk_name: str) -> dict:
                 if vid not in id_meta:
                     continue
                 try:
-                    newv = int(bits.replace("x", "0").replace("z", "0").replace("X", "0").replace("Z", "0"), 2)
+                    newv = int(
+                        bits.replace("x", "0")
+                        .replace("z", "0")
+                        .replace("X", "0")
+                        .replace("Z", "0"),
+                        2,
+                    )
                 except ValueError:
                     continue
                 old = values.get(vid)
@@ -139,6 +218,11 @@ def parse_vcd_activity(path: Path, scope_prefix: str, clk_name: str) -> dict:
                 values[vid] = newv
                 continue
 
+        show_progress(force=True)
+
+    elapsed = time.time() - t_wall0
+    _progress(f"  VCD parse done in {elapsed:.1f}s  t={t}  cycles={clk_rises}")
+
     cycles = max(clk_rises, 1)
     duration = max(t, 1)
 
@@ -150,7 +234,7 @@ def parse_vcd_activity(path: Path, scope_prefix: str, clk_name: str) -> dict:
         r = rises.get(vid, 0)
         # For vectors, r already counts bit-rises; activity per bit ≈ r/(w*cycles)
         act = (r / cycles) if w == 1 else (r / (cycles * w))
-        duty = (high_time.get(vid, 0) / duration) if w == 1 else 0.5
+        duty = (high_time.get(vid, 0) / duration) if vid in duty_ids else 0.5
         # clamp to OpenSTA-reasonable range
         act_c = min(max(act, 0.0), 2.0)
         short = h[len(scope_prefix) + 1 :] if h.startswith(scope_prefix + ".") else h
@@ -166,16 +250,7 @@ def parse_vcd_activity(path: Path, scope_prefix: str, clk_name: str) -> dict:
         if w == 1 and short != clk_name and "clk" not in short.split(".")[-1]:
             total_act += act_c
             total_bits += 1
-        aliases = {
-            "imem_ce": ("imem_ce", "u_imem.ce"),
-            "dmem_ce": ("dmem_ce", "u_dmem.ce"),
-            "dmem_we": ("dmem_we", "u_dmem.we"),
-            "imem_we": ("imem_we", "u_imem.we"),
-            "sram_clk_en": ("sram_clk_en",),
-            "halted": ("halted",),
-            "reset": ("reset",),
-        }
-        for key, names in aliases.items():
+        for key, names in ALIASES.items():
             if short in names and key not in interesting:
                 interesting[key] = rec
 
@@ -205,7 +280,10 @@ def parse_vcd_activity(path: Path, scope_prefix: str, clk_name: str) -> dict:
         "n_signals": len(records),
         "global_activity_mean": global_activity,
         "global_activity_median": median_activity,
-        "interesting": {k: {"activity": v["activity"], "duty": v["duty"], "rises": v["rises"]} for k, v in interesting.items()},
+        "interesting": {
+            k: {"activity": v["activity"], "duty": v["duty"], "rises": v["rises"]}
+            for k, v in interesting.items()
+        },
         # top toggles for debug
         "top_active": sorted(
             (

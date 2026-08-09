@@ -1,5 +1,5 @@
 /* Linker script for sky130_vex2_soc (true Harvard)
- *   IMEM  0x00000000  8 KiB  (.text)
+ *   IMEM  0x00000000  8 KiB  (.text) — _start@0, irq@0x80 (mtvec)
  *   DMEM  0x10000000  8 KiB  (.rodata/.data/.bss/stack)
  */
 OUTPUT_ARCH(riscv)
@@ -15,6 +15,8 @@ _stack_size = 512;
 SECTIONS {
   .text : {
     *(.text.init)
+    . = 0x80;
+    KEEP(*(.text.irq))
     *(.text .text.*)
     *(.text.startup)
   } > IMEM
@@ -44,7 +46,6 @@ SECTIONS {
     _bss_end = .;
   } > DMEM
 
-  /* Stack grows down from the top of DMEM; not a real section payload. */
   PROVIDE(_stack_start = ORIGIN(DMEM) + LENGTH(DMEM));
   PROVIDE(_stack_end   = _stack_start - _stack_size);
 

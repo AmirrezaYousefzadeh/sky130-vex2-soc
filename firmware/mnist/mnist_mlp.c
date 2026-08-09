@@ -2,9 +2,11 @@
  *
  *   INPUT (8x8=64) --FC+ReLU--> HIDDEN (32) --FC--> LOGITS (10)
  *
- * int8 weights, uint8 pixels, int32 accumulators. Result:
- *   tohost = predicted class + 1   on match with MNIST_EXPECT  (PASS)
- *   tohost = 0xE000 | pred         on mismatch                 (FAIL)
+ * Clock-gated schedule (TB times the sleeps on free-running clk):
+ *   init -> sleep -> (TB waits 10k) wake -> one inference -> sleep
+ *        -> (TB waits 10k) wake -> halt
+ *
+ * PASS: tohost = predicted class + 1  (match MNIST_EXPECT)
  */
 #include <stdint.h>
 #include "../common/soc.h"
@@ -22,7 +24,6 @@ static int32_t clamp_i32(int32_t v, int32_t lo, int32_t hi)
   return v;
 }
 
-/* y[o] = sum_i W[o*in + i] * x[i] + b[o] */
 static void fc_relu_quant(
     const int8_t *w,
     const int32_t *b,
@@ -38,7 +39,6 @@ static void fc_relu_quant(
     for (int i = 0; i < in_n; i++)
       acc += (int32_t)row[i] * (int32_t)x[i];
     if (do_relu_quant) {
-      /* ReLU + requant to 0..127 via fixed-point: (acc * M) >> S */
       int32_t q = (int32_t)(((int64_t)acc * (int64_t)H_REQUANT_M) >> H_REQUANT_S);
       y[o] = clamp_i32(q, 0, 127);
     } else {
@@ -77,16 +77,26 @@ static int argmax10(const int32_t *v)
   return best_i;
 }
 
+static int run_inference(const uint8_t *img)
+{
+  fc_relu_quant(W1, B1, img, hidden, MNIST_IN, MNIST_HID, 1);
+  fc_from_i8(W2, B2, hidden, logits, MNIST_HID, MNIST_OUT);
+  return argmax10(logits);
+}
+
 int main(void)
 {
-  /* Layer 1: 64 -> 32 with ReLU + int8 requant into hidden[] */
-  fc_relu_quant(W1, B1, INPUT_IMG, hidden, MNIST_IN, MNIST_HID, 1);
+  /* Power-on wake already ran crt0 init. First gated sleep (TB holds ~10k). */
+  gpio_set_done(0);
+  sleep_until_wake();
 
-  /* Layer 2: 32 -> 10 logits */
-  fc_from_i8(W2, B2, hidden, logits, MNIST_HID, MNIST_OUT);
+  int pred = run_inference(INPUT_IMG);
+  gpio_set_done(1);
 
-  int pred = argmax10(logits);
+  /* Second gated sleep (TB holds ~10k), then wake to halt. */
+  sleep_until_wake();
+
   if (pred == MNIST_EXPECT)
-    return pred + 1; /* 1..10 => PASS */
+    return pred + 1;
   return 0xE000 | (pred & 0xFF);
 }

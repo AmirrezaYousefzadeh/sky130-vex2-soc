@@ -10,7 +10,7 @@ OBJDUMP   := $(TOOLCHAIN)-objdump
 SIZE      := $(TOOLCHAIN)-size
 ELF2MEM   := $(ROOT)/firmware/scripts/elf2mem.py
 
-ARCH      := -march=rv32im -mabi=ilp32
+ARCH      := -march=rv32im_zicsr -mabi=ilp32
 CFLAGS    := $(ARCH) -Os -g -ffreestanding -nostdlib -Wall -Wextra \
              -fno-builtin -fno-common -ffunction-sections -fdata-sections \
              -I$(FW)

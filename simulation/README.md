@@ -21,12 +21,14 @@ source ../env.sh   # optional: puts OSS CAD Suite on PATH
 ./run_gls.sh                 # smoke + SDF timing → waveform_gls.vcd
 ./run_gls.sh fw --vcd        # → waveform_gls.vcd  (use this for power)
 ./run_gls.sh fw --vcd --no-sdf   # optional: fast zero-delay GLS
+# Terminal: SDF spinner, then cycle % / ETA (gls_progress.py)
 ```
 
 Then:
 
 ```bash
-../power/run_power.sh ./waveform_gls.vcd
+../power/run_avg_power.sh ./waveform_gls.vcd
+../power/run_time_power.sh ./waveform_gls.vcd   # windowed power VCD / CSV
 ```
 
 Open `*.vcd` in Cursor with the **Surfer** or **VaporView** extension, or GTKWave.
@@ -38,7 +40,7 @@ Open `*.vcd` in Cursor with the **Surfer** or **VaporView** extension, or GTKWav
 | `smoke` | Tiny hand-loaded program writes `tohost` and halts | `waveform.vcd` / `waveform_gls.vcd` |
 | `fw` | Builds firmware (`firmware/`) and runs MNIST MLP until halt | off unless `--vcd` → same names |
 
-PASS for firmware: `tohost = predicted_digit + 1` and SRAM clocks gated.
+PASS for firmware: `tohost = predicted_digit + 1`, with TB `wake` / `gpio_done` and two 10k-cycle clock-gated sleeps around one inference.
 
 ## Parameters (both scripts)
 

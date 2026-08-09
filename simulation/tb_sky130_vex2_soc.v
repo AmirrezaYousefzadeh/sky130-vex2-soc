@@ -1,38 +1,50 @@
 `timescale 1ns/1ps
 
 // Smoke test: tiny program writes tohost and halts.
+// SoC powers on asleep — TB pulses wake so the program can run.
 module tb_sky130_vex2_soc;
   reg clk = 0;
   reg reset = 1;
+  reg wake = 0;
   wire halted;
   wire [31:0] tohost;
+  wire gpio_done;
+  wire sleeping;
   wire sram_clk_en;
 
-  // SDF GLS: use >= hardened CLOCK_PERIOD
   localparam real CLK_PERIOD_NS = 20.0;
-  // Most CPU flops are dfxtp (no async reset); sync reset needs many cycles
-  // to flush X through delayed combo before release — especially with SDF.
   localparam integer RESET_CYCLES = 64;
   localparam integer TIMEOUT_CYCLES = 10000;
   always #(CLK_PERIOD_NS / 2.0) clk = ~clk;
 
+`ifdef GLS_PROGRESS
+  `ifndef PROGRESS_EVERY
+    `define PROGRESS_EVERY 500
+  `endif
+  integer gls_cyc;
+  initial gls_cyc = 0;
+  always @(posedge clk) begin
+    gls_cyc = gls_cyc + 1;
+    if ((gls_cyc % `PROGRESS_EVERY) == 0)
+      $display("GLS_PROGRESS cycle=%0d max=%0d", gls_cyc, TIMEOUT_CYCLES);
+  end
+`endif
+
   sky130_vex2_soc u_soc (
     .clk        (clk),
     .reset      (reset),
+    .wake       (wake),
     .halted     (halted),
     .tohost     (tohost),
+    .gpio_done  (gpio_done),
+    .sleeping   (sleeping),
     .sram_clk_en(sram_clk_en)
   );
 
-  // Gate-level: zero synthesized regfile (RTL used $readmemb zeros).
 `ifdef GLS_RF_INIT
   `include "gls_regfile_init.vh"
 `endif
 
-  // Machine code in IMEM (little-endian words):
-  //   addi a0, x0, 1          -> 0x00100513
-  //   lui  a1, 0x20000        -> 0x200005b7   (a1 = 0x20000000)
-  //   sw   a0, 0(a1)          -> 0x00a5a023
 `ifndef DUMP_PATH
   `define DUMP_PATH "waveform.vcd"
 `endif
@@ -46,7 +58,6 @@ module tb_sky130_vex2_soc;
 
   initial begin
 `ifdef SDF_ANNOTATE
-    // Must finish before time advances / reset is released.
     $sdf_annotate(`SDF_ANNOTATE, u_soc);
     $display("SDF: annotated %s onto u_soc", `SDF_ANNOTATE);
 `endif
@@ -56,19 +67,24 @@ module tb_sky130_vex2_soc;
     $display("WAVEFORM: dumping to %s (level=%0d)", `DUMP_PATH, `DUMP_LEVEL);
     $display("CLK: period=%0g ns  reset_cycles=%0d", CLK_PERIOD_NS, RESET_CYCLES);
 
-    // Backdoor load into SRAM behavioral model
     u_soc.u_imem.mem[0] = 32'h00100513;
     u_soc.u_imem.mem[1] = 32'h200005b7;
     u_soc.u_imem.mem[2] = 32'h00a5a023;
     u_soc.u_imem.mem[3] = 32'h00000013;
 
-    // Hold reset while clocking so sync-reset logic can clear dfxtp X state.
     reset = 1'b1;
+    wake  = 1'b0;
     repeat (RESET_CYCLES) @(posedge clk);
-    // Deassert away from the rising edge (SDF clock skew / recovery).
     @(negedge clk);
     reset = 1'b0;
-    $display("TB: reset released at t=%0t", $time);
+    $display("TB: reset released at t=%0t (sleeping=%0d)", $time, sleeping);
+
+    // Power-on sleep: pulse wake so the smoke program can fetch.
+    repeat (4) @(posedge clk);
+    wake = 1'b1;
+    repeat (8) @(posedge clk);
+    wake = 1'b0;
+    $display("TB: wake pulsed");
 
     begin : wait_halt
       integer i;
@@ -82,7 +98,8 @@ module tb_sky130_vex2_soc;
       $display("PASS: halted=%0d tohost=%0d sram_clk_en=%0d", halted, tohost, sram_clk_en);
       $finish;
     end else begin
-      $display("FAIL: halted=%b tohost=%h sram_clk_en=%b", halted, tohost, sram_clk_en);
+      $display("FAIL: halted=%b tohost=%h sram_clk_en=%b sleeping=%b",
+               halted, tohost, sram_clk_en, sleeping);
       $fatal(1);
     end
   end
