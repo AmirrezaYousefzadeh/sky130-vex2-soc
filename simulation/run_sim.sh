@@ -11,12 +11,14 @@
 #   DUMP_VCD=1           same as --vcd for fw (default: on for smoke, off for fw)
 #   TIMEOUT_CYCLES=N     fw halt timeout (default 5000000)
 #   VCD_NAME=name.vcd    output filename under simulation/
+#   SKIP_CLEAN=1         keep previous build/ + VCDs (default: clean first)
 #   HARDWARE_TOOLS_ROOT  OSS CAD Suite location (default /media/hardware_design_tools)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SIM="$(cd "$(dirname "$0")" && pwd)"
 HARDWARE_TOOLS_ROOT="${HARDWARE_TOOLS_ROOT:-/media/hardware_design_tools}"
+SKIP_CLEAN="${SKIP_CLEAN:-0}"
 
 if [[ -x "$HARDWARE_TOOLS_ROOT/oss-cad-suite/bin/iverilog" ]]; then
   export PATH="$HARDWARE_TOOLS_ROOT/oss-cad-suite/bin:$PATH"
@@ -37,6 +39,15 @@ for arg in "$@"; do
 done
 
 OUT="$SIM/build"
+# Default output name (overridable via VCD_NAME) — resolve before clean.
+VCD_NAME="${VCD_NAME:-waveform.vcd}"
+if [[ "$SKIP_CLEAN" != "1" ]]; then
+  echo "==> Cleaning previous RTL sim artifacts"
+  rm -rf "$OUT"
+  # Drop prior RTL dumps / symlink; leave gate-level VCDs (waveform_gls*) and build_gls/ alone.
+  rm -f "$SIM/waveform.vcd" "$SIM/latest.vcd" "$SIM/$VCD_NAME"
+  rm -f "$SIM/imem.hex" "$SIM/dmem.hex"
+fi
 mkdir -p "$OUT"
 cd "$OUT"
 cp -f "$ROOT/rtl/cpu/VexRiscv2.v_toplevel_RegFilePlugin_regFile.bin" .
@@ -51,7 +62,6 @@ RTL=(
 
 case "$MODE" in
   smoke)
-    VCD_NAME="${VCD_NAME:-sky130_vex2_soc.vcd}"
     VCD_PATH="$SIM/$VCD_NAME"
     iverilog -g2012 -o soc.vvp \
       -DDUMP_PATH="\"$VCD_PATH\"" \
@@ -59,6 +69,7 @@ case "$MODE" in
       "$SIM/tb_sky130_vex2_soc.v"
     echo "Running smoke simulation..."
     vvp soc.vvp
+    python3 "$SIM/vcd_rescale_ns.py" "$VCD_PATH"
     ln -sfn "$VCD_NAME" "$SIM/latest.vcd"
     echo "Waveform: $VCD_PATH"
     ;;
@@ -69,7 +80,6 @@ case "$MODE" in
     DUMP_VCD="${DUMP_VCD:-0}"
     DUMP_FLAGS=()
     if [[ "$DUMP_VCD" == "1" ]]; then
-      VCD_NAME="${VCD_NAME:-mnist_mlp.vcd}"
       VCD_PATH="$SIM/$VCD_NAME"
       DUMP_FLAGS+=(-DDUMP_PATH="\"$VCD_PATH\"")
       echo "VCD dump enabled: $VCD_PATH"
@@ -85,6 +95,7 @@ case "$MODE" in
     echo "Running MNIST MLP firmware simulation..."
     vvp fw_mnist.vvp
     if [[ "$DUMP_VCD" == "1" ]]; then
+      python3 "$SIM/vcd_rescale_ns.py" "$VCD_PATH"
       ln -sfn "$VCD_NAME" "$SIM/latest.vcd"
       echo "Waveform: $VCD_PATH"
     fi

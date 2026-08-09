@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Render a floorplan PNG from an OpenLane/OpenROAD DEF (viewable in Cursor)."""
+"""Render a floorplan PNG from an OpenLane/OpenROAD DEF (viewable in Cursor).
+
+Streams the DEF line-by-line (fillinsertion DEFs can be 40MB+; loading the whole
+file and running regex findall used to hang the synthesis wrapper).
+"""
 from __future__ import annotations
 
 import argparse
@@ -12,35 +16,61 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 
+_COMPONENT_RE = re.compile(
+    r"-\s+(\S+)\s+(\S+)\s+\+\s+(?:FIXED|COVER|PLACED)\s+"
+    r"\(\s*([-\d]+)\s+([-\d]+)\s*\)\s+(\S+)"
+)
+_FILLER_HINTS = ("fill_", "decap", "tap", "diode", "filler")
+
+
+def _is_filler(cell: str) -> bool:
+    c = cell.lower()
+    return any(h in c for h in _FILLER_HINTS)
+
 
 def parse_def(path: Path):
-    text = path.read_text(errors="ignore")
-    m = re.search(r"UNITS DISTANCE MICRONS\s+(\d+)", text)
-    units = int(m.group(1)) if m else 1000
-
-    m = re.search(
-        r"DIEAREA\s+\(\s*([-\d]+)\s+([-\d]+)\s*\)\s*\(\s*([-\d]+)\s+([-\d]+)\s*\)",
-        text,
-    )
-    if not m:
-        raise SystemExit(f"No DIEAREA in {path}")
-    die = tuple(int(x) / units for x in m.groups())
-
-    pat = re.compile(
-        r"-\s+(\S+)\s+(\S+)\s+\+\s+(?:FIXED|COVER|PLACED)\s+"
-        r"\(\s*([-\d]+)\s+([-\d]+)\s*\)\s+(\S+)"
-    )
-    macros = []
+    units = 1000
+    die = None
+    macros: list[tuple[str, str, float, float, str]] = []
     cells_x: list[float] = []
     cells_y: list[float] = []
-    for name, cell, x, y, ori in pat.findall(text):
-        xu, yu = int(x) / units, int(y) / units
-        if "sram" in cell.lower():
-            macros.append((name, cell, xu, yu, ori))
-        else:
-            cells_x.append(xu)
-            cells_y.append(yu)
-    return die, macros, cells_x, cells_y
+    # Cap plotted stdcells so huge fillinsertion DEFs stay interactive.
+    max_cells = 80_000
+    skipped_fillers = 0
+
+    with path.open(errors="ignore") as f:
+        for line in f:
+            if die is None and "DIEAREA" in line:
+                m = re.search(
+                    r"DIEAREA\s+\(\s*([-\d]+)\s+([-\d]+)\s*\)\s*\(\s*([-\d]+)\s+([-\d]+)\s*\)",
+                    line,
+                )
+                if m:
+                    die = tuple(int(x) / units for x in m.groups())
+                continue
+            if "UNITS DISTANCE MICRONS" in line:
+                m = re.search(r"UNITS DISTANCE MICRONS\s+(\d+)", line)
+                if m:
+                    units = int(m.group(1))
+                continue
+            if not line.lstrip().startswith("-"):
+                continue
+            m = _COMPONENT_RE.search(line)
+            if not m:
+                continue
+            name, cell, x, y, ori = m.groups()
+            xu, yu = int(x) / units, int(y) / units
+            if "sram" in cell.lower():
+                macros.append((name, cell, xu, yu, ori))
+            elif _is_filler(cell):
+                skipped_fillers += 1
+            elif len(cells_x) < max_cells:
+                cells_x.append(xu)
+                cells_y.append(yu)
+
+    if die is None:
+        raise SystemExit(f"No DIEAREA in {path}")
+    return die, macros, cells_x, cells_y, skipped_fillers
 
 
 def macro_size_um(lef: Path | None, default=(674.48, 781.92)):
@@ -57,7 +87,7 @@ def render(
     lef: Path | None,
     title: str,
 ) -> None:
-    die, macros, cx, cy = parse_def(def_file)
+    die, macros, cx, cy, skipped_fillers = parse_def(def_file)
     mw, mh = macro_size_um(lef)
     dx0, dy0, dx1, dy1 = die
 
@@ -110,8 +140,9 @@ def render(
     ax.set_aspect("equal")
     ax.set_xlabel("µm")
     ax.set_ylabel("µm")
+    extra = f", skipped {skipped_fillers} fillers" if skipped_fillers else ""
     ax.set_title(
-        f"{title}\n{def_file.name} — {len(macros)} macros, {len(cx)} placed cells"
+        f"{title}\n{def_file.name} — {len(macros)} macros, {len(cx)} cells{extra}"
     )
     ax.grid(True, alpha=0.25)
     handles, labels = ax.get_legend_handles_labels()
@@ -124,7 +155,7 @@ def render(
     print(f"  DIE=({dx0:.0f},{dy0:.0f})-({dx1:.0f},{dy1:.0f}) µm")
     for name, _cell, x, y, _ori in macros:
         print(f"  {name} @ ({x:.1f}, {y:.1f})")
-    print(f"  placed std-cells: {len(cx)}")
+    print(f"  placed std-cells: {len(cx)}" + (f" (skipped {skipped_fillers} fillers)" if skipped_fillers else ""))
 
 
 def main():

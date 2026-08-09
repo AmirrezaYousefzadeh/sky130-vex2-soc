@@ -1,13 +1,13 @@
-# sky130 Vex-2 + SRAM22 SoC
+# sky130 VexRiscv + SRAM22 SoC
 
 Open-source path toward a tapeout-oriented RISC-V design on SkyWater 130 nm:
-**VexRiscv 2-stage (Vex-2)** + **two SRAM22 macros** for instruction and data memory.
+**VexRiscv with a four-stage internal pipeline** + **two SRAM22 macros** for instruction and data memory.
 
 ## Locked choices
 
 | Block | Choice | Notes |
 |-------|--------|--------|
-| Core | `VexRiscv2` (2-stage, bypass, mul/div) | Generated from SpinalHDL; low CPI / EPI oriented |
+| Core | `VexRiscv2` (decode/execute/memory/writeback, bypass, mul/div) | Generated from SpinalHDL; timing-oriented for a 60 MHz target |
 | IMEM | `sram22_2048x32m8w8` | 2048 × 32 = **8 KiB** |
 | DMEM | `sram22_2048x32m8w8` | same |
 
@@ -47,11 +47,11 @@ source env.sh
 # Synthesis (clock period: synthesis/sky130_vex2_soc/config.yaml → CLOCK_PERIOD)
 ./synthesis/run_synthesis.sh
 
-# Gate-level sim → VCD for power (needs final/nl from synthesis)
+# Gate-level sim → VCD for power (SDF delays + glitches; needs final/nl + final/sdf)
 ./simulation/run_gls.sh fw --vcd
 
 # Power / energy (prefers gate-level VCD when present)
-./power/run_power.sh ./simulation/mnist_mlp_gls.vcd
+./power/run_power.sh ./simulation/waveform_gls.vcd
 ```
 
 Each of `setup/`, `simulation/`, `synthesis/`, `power/`, and `firmware/` has its own README with parameters.

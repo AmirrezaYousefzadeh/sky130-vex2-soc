@@ -1,6 +1,6 @@
 [*]
 [*] GTKWave save file for sky130_vex2_soc smoke test
-[dumpfile] "sky130_vex2_soc.vcd"
+[dumpfile] "waveform.vcd"
 [timestart] 0
 [size] 1400 800
 [pos] -1 -1

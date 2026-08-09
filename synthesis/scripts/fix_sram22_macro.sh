@@ -6,6 +6,19 @@ OL2="${OPENLANE_ROOT:-/media/hardware_design_tools/openlane2}"
 MACROS="$ROOT/synthesis/sky130_vex2_soc/macros"
 CELL=sram22_2048x32m8w8
 export PDK_ROOT="${PDK_ROOT:-/media/pdk}"
+SKIP_CLEAN="${SKIP_CLEAN:-0}"
+
+clean_macro_temps() {
+  # Keep final .lef / .lib / .bb.v / .gds — drop patch scratch + backups.
+  rm -f "$MACROS"/_*.py "$MACROS"/_*.tcl "$MACROS"/_*.gds
+  rm -f "$MACROS"/*.prboundary.gds "$MACROS"/*.get_bbox_test.log
+  rm -f "$MACROS"/*.pre_pdn_fix "$MACROS"/*.pre_prboundary
+}
+
+if [[ "$SKIP_CLEAN" != "1" ]]; then
+  echo "==> Cleaning previous macro patch temps"
+  clean_macro_temps
+fi
 
 python3 "$ROOT/synthesis/scripts/fix_sram22_macro.py" --macros-dir "$MACROS" --cell "$CELL"
 
@@ -39,16 +52,6 @@ run_nix klayout -b -r "$VERIFY_PY"
 
 # Magics FULL macro GDS load is very slow; prove 235/4→FIXED_BBOX on a tiny GDS.
 TINY_PY="$MACROS/_tiny_prb.py"
-cat >"$TINY_PY" <<'PY'
-import pya
-layout = pya.Layout()
-layout.dbu = 0.001
-cell = layout.create_cell("sram22_prb_test")
-li = layout.layer(pya.LayerInfo(235, 4))
-cell.shapes(li).insert(pya.DBox(0, 0, 674.48, 781.92).to_itype(layout.dbu))
-layout.write("$ROOT/synthesis/sky130_vex2_soc/macros/_tiny_prb.gds")
-PY
-# path baked above — rewrite with MACROS
 cat >"$TINY_PY" <<PY
 import pya
 layout = pya.Layout()
@@ -82,4 +85,9 @@ if rg -q "FIXED_BBOX" "$BBOX_LOG"; then
 else
   echo "FAIL: Magics still missing FIXED_BBOX — see $BBOX_LOG"
   exit 1
+fi
+
+if [[ "$SKIP_CLEAN" != "1" ]]; then
+  echo "==> Removing macro patch scratch files"
+  clean_macro_temps
 fi

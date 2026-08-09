@@ -22,7 +22,7 @@ Reported fields:
 
 | Parameter | File | Key / notes |
 |-----------|------|-------------|
-| **Clock period (ns)** | `sky130_vex2_soc/config.yaml` | `CLOCK_PERIOD: 40` → 25 MHz |
+| **Clock period (ns)** | `sky130_vex2_soc/config.yaml` | `CLOCK_PERIOD: 16.667` → approximately 60 MHz |
 | IR-drop report | same | `RUN_IRDROP_REPORT: false` — PSM fails on SRAM22 met2 pin islands; re-enable when PDN/PSM is clean |
 | Magics GDS streamout | same | `RUN_MAGIC_STREAMOUT: false` — use KLayout; Magics still useful for optional WriteLEF |
 | Clock port name | same | `CLOCK_PORT: clk` |

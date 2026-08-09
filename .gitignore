@@ -7,35 +7,47 @@ tools/riscv-none-elf-gcc
 tools/riscv-gcc.tar.gz
 tools/*.tar.gz
 tools/*.tgz
+tools/oss-cad-suite
 
+# Python
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# Simulation build trees + waveforms
 simulation/build/
 simulation/build_gls/
+simulation/build_gls_*/
 simulation/*.vcd
 simulation/latest.vcd
 simulation/latest_gls.vcd
+simulation/*.log
+simulation/imem.hex
+simulation/dmem.hex
 
 firmware/build/
 firmware/mnist/data/
 
+# OpenLane runs / local reports / floorplan plots
 synthesis/**/runs/
 synthesis/**/explore_logs/
 synthesis/**/macros/*.gds
 synthesis/**/macros/*.gds.*
 synthesis/**/*.log
 synthesis/**/floorplan_*.png
+synthesis/**/synthesis_results.txt
 
 power/out_*/
 power/*/activity.json
 power/*/activity.tcl
 
+# Third-party checkouts (fetch via setup/)
 third_party/VexRiscv/
 third_party/sram22_sky130_macros/
 
-synthesis/**/macros/*.gds
-synthesis/**/macros/*.gds.*
+# Macro build leftovers
 synthesis/**/macros/*.log
 synthesis/**/macros/_*.py
 synthesis/**/macros/_*.tcl
 synthesis/**/macros/_*.gds
 synthesis/**/macros/*.pre_*
-tools/oss-cad-suite

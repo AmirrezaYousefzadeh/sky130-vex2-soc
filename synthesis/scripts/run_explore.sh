@@ -4,10 +4,14 @@
 # Usage:
 #   ./scripts/run_explore.sh                         # default set
 #   ./scripts/run_explore.sh area_1750x1000_p28 fmax_1800x1100_p18
+#
+# Env:
+#   SKIP_CLEAN=1   keep previous explore_logs/ and explore_* run dirs
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
+SKIP_CLEAN="${SKIP_CLEAN:-0}"
 
 python3 "$ROOT/synthesis/scripts/explore_area_fmax.py" --write "$@"
 
@@ -18,6 +22,13 @@ if [[ ${#NAMES[@]} -eq 0 ]]; then
 fi
 
 LOGDIR="$ROOT/synthesis/sky130_vex2_soc/explore_logs"
+if [[ "$SKIP_CLEAN" != "1" ]]; then
+  echo "==> Cleaning previous explore artifacts"
+  rm -rf "$LOGDIR"
+  for name in "${NAMES[@]}"; do
+    rm -rf "$ROOT/synthesis/sky130_vex2_soc/runs/explore_${name}"
+  done
+fi
 mkdir -p "$LOGDIR"
 SUMMARY="$LOGDIR/summary.tsv"
 echo -e "name\tdie_mm2\tperiod_ns\tstatus\tperiod_min_tt\tfmax_tt\tperiod_min_ss\tfmax_ss\twns_tt" >"$SUMMARY"

@@ -7,6 +7,10 @@
 #   OUT=my_floorplan.png ./scripts/save_floorplan_png.sh
 #
 # Output defaults to: synthesis/sky130_vex2_soc/floorplan_real.png
+#
+# Env:
+#   SKIP_CLEAN=1   keep other floorplan_*.png files
+#   RUN_TAG=name   use this OpenLane run (default: newest under runs/)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -15,6 +19,14 @@ RUNS="$DESIGN_DIR/runs"
 LEF="$DESIGN_DIR/macros/sram22_2048x32m8w8.lef"
 OUT="${OUT:-$DESIGN_DIR/floorplan_real.png}"
 PY="$ROOT/synthesis/scripts/plot_floorplan_def.py"
+SKIP_CLEAN="${SKIP_CLEAN:-0}"
+RUN_TAG="${RUN_TAG:-}"
+
+if [[ "$SKIP_CLEAN" != "1" ]]; then
+  echo "==> Cleaning previous floorplan PNGs"
+  rm -f "$DESIGN_DIR"/floorplan_*.png
+  rm -f "$OUT"
+fi
 
 pick_python() {
   if [[ -x /media/hardware_design_tools/venv/bin/python ]]; then
@@ -53,8 +65,12 @@ if [[ -z "$DEF_FILE" ]]; then
     echo "Pass a .def explicitly, or run harden first."
     exit 1
   fi
-  # Newest run directory
-  LATEST_RUN="$(find "$RUNS" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -nr | head -1 | cut -d' ' -f2-)"
+  if [[ -n "$RUN_TAG" && -d "$RUNS/$RUN_TAG" ]]; then
+    LATEST_RUN="$RUNS/$RUN_TAG"
+  else
+    # Newest run directory
+    LATEST_RUN="$(find "$RUNS" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -nr | head -1 | cut -d' ' -f2-)"
+  fi
   if [[ -z "$LATEST_RUN" ]]; then
     echo "No OpenLane runs found under $RUNS"
     exit 1
@@ -64,7 +80,7 @@ if [[ -z "$DEF_FILE" ]]; then
     echo "No .def found in $LATEST_RUN"
     exit 1
   fi
-  echo "Using latest run: $(basename "$LATEST_RUN")"
+  echo "Using run: $(basename "$LATEST_RUN")"
 fi
 
 if [[ ! -f "$DEF_FILE" ]]; then

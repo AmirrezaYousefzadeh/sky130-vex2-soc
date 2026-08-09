@@ -18,7 +18,10 @@ LDFLAGS   := $(ARCH) -nostdlib -T$(FW)/link.ld -Wl,--gc-sections -Wl,-Map=$(BUIL
 
 .PHONY: all clean train sizes
 
-all: $(BUILD)/mnist_mlp.elf $(BUILD)/imem.hex $(BUILD)/dmem.hex sizes
+# Fresh build tree every time so stale objects/hex do not accumulate.
+all:
+	$(MAKE) clean
+	$(MAKE) $(BUILD)/mnist_mlp.elf $(BUILD)/imem.hex $(BUILD)/dmem.hex sizes
 
 train: $(MNIST)/weights.h
 

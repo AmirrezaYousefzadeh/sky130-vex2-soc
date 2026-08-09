@@ -1,5 +1,5 @@
 // sky130_vex2_soc
-// VexRiscv 2-stage + two SRAM22 2048x32 macros (IMEM + DMEM)
+// VexRiscv 4-stage internal pipeline + two SRAM22 2048x32 macros (IMEM + DMEM)
 //
 // Memory map:
 //   0x0000_0000 .. 0x0000_1FFF  IMEM  8 KiB  (instruction fetch only)

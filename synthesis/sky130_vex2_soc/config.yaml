@@ -11,18 +11,30 @@ VERILOG_FILES:
   - dir::../../rtl/soc/dbus_sram22_bridge.v
   - dir::../../rtl/soc/sky130_vex2_soc.v
 
-# Timing target: port name + period in ns (40 ns => 25 MHz).
+# Timing target: port name + period in ns
 # Smaller period = higher Fmax target; STA fails if the design cannot meet it.
 CLOCK_PORT: clk
-CLOCK_PERIOD: 40
+CLOCK_PERIOD: 20
+
+# Custom SDC (replaces OpenLane base.sdc). Treats chip `reset` as async
+# (set_false_path) so STA does not require hold on reset → SRAM rstb.
+PNR_SDC_FILE: dir::sky130_vex2_soc.sdc
+SIGNOFF_SDC_FILE: dir::sky130_vex2_soc.sdc
+
+# Standard-cell library (OpenLane / PDK). Change here to switch libraries:
+#   sky130_fd_sc_hd   # high-density (default)
+#   sky130_fd_sc_hs   # high-speed (faster, higher power)
+#   sky130_fd_sc_ms   # medium-speed
+#   sky130_fd_sc_ls   # low-speed (low-power)
+STD_CELL_LIBRARY: sky130_fd_sc_ms
 
 # Floorplan outline (µm). FP_SIZING=absolute means DIE_AREA / CORE_AREA are used as-is
 # (vs relative sizing from utilization).
 # DIE_AREA:  [llx, lly, urx, ury] outer chip boundary.
 # CORE_AREA: placement region inside the die (must stay strictly inside DIE_AREA).
 FP_SIZING: absolute
-DIE_AREA: [0, 0, 2000, 1000]
-CORE_AREA: [20, 20, 1980, 980]
+DIE_AREA: [0, 0, 2000, 2000]
+CORE_AREA: [20, 20, 1980, 1980]
 
 # Power distribution network (PDN).
 # Multilayer straps + custom SRAM22 hookup script (FP_PDN_CFG).

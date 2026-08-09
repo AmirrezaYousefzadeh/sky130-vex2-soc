@@ -8,7 +8,13 @@ module tb_sky130_vex2_soc;
   wire [31:0] tohost;
   wire sram_clk_en;
 
-  always #5 clk = ~clk; // 100 MHz sim clock
+  // SDF GLS: use >= hardened CLOCK_PERIOD
+  localparam real CLK_PERIOD_NS = 20.0;
+  // Most CPU flops are dfxtp (no async reset); sync reset needs many cycles
+  // to flush X through delayed combo before release — especially with SDF.
+  localparam integer RESET_CYCLES = 64;
+  localparam integer TIMEOUT_CYCLES = 10000;
+  always #(CLK_PERIOD_NS / 2.0) clk = ~clk;
 
   sky130_vex2_soc u_soc (
     .clk        (clk),
@@ -27,11 +33,8 @@ module tb_sky130_vex2_soc;
   //   addi a0, x0, 1          -> 0x00100513
   //   lui  a1, 0x20000        -> 0x200005b7   (a1 = 0x20000000)
   //   sw   a0, 0(a1)          -> 0x00a5a023
-  // DUMP_PATH is set by scripts/sim_smoke.sh (-DDUMP_PATH=...).
-  // Default keeps waveforms under waves/ for one-click open in Cursor
-  // (Surfer / VaporView extensions — open the .vcd file).
 `ifndef DUMP_PATH
-  `define DUMP_PATH "sky130_vex2_soc.vcd"
+  `define DUMP_PATH "waveform.vcd"
 `endif
 
   `ifndef DUMP_LEVEL
@@ -42,34 +45,44 @@ module tb_sky130_vex2_soc;
   `endif
 
   initial begin
+`ifdef SDF_ANNOTATE
+    // Must finish before time advances / reset is released.
+    $sdf_annotate(`SDF_ANNOTATE, u_soc);
+    $display("SDF: annotated %s onto u_soc", `SDF_ANNOTATE);
+`endif
+
     $dumpfile(`DUMP_PATH);
     $dumpvars(`DUMP_LEVEL, `DUMP_MODULE);
     $display("WAVEFORM: dumping to %s (level=%0d)", `DUMP_PATH, `DUMP_LEVEL);
+    $display("CLK: period=%0g ns  reset_cycles=%0d", CLK_PERIOD_NS, RESET_CYCLES);
 
     // Backdoor load into SRAM behavioral model
     u_soc.u_imem.mem[0] = 32'h00100513;
     u_soc.u_imem.mem[1] = 32'h200005b7;
     u_soc.u_imem.mem[2] = 32'h00a5a023;
-    // NOP pad
     u_soc.u_imem.mem[3] = 32'h00000013;
 
-    repeat (5) @(posedge clk);
-    reset = 0;
+    // Hold reset while clocking so sync-reset logic can clear dfxtp X state.
+    reset = 1'b1;
+    repeat (RESET_CYCLES) @(posedge clk);
+    // Deassert away from the rising edge (SDF clock skew / recovery).
+    @(negedge clk);
+    reset = 1'b0;
+    $display("TB: reset released at t=%0t", $time);
 
-    // Wait for halt or timeout
     begin : wait_halt
       integer i;
-      for (i = 0; i < 2000; i = i + 1) begin
+      for (i = 0; i < TIMEOUT_CYCLES; i = i + 1) begin
         @(posedge clk);
-        if (halted) disable wait_halt;
+        if (halted === 1'b1) disable wait_halt;
       end
     end
 
-    if (halted && tohost == 32'd1 && sram_clk_en == 1'b0) begin
+    if (halted === 1'b1 && tohost === 32'd1 && sram_clk_en === 1'b0) begin
       $display("PASS: halted=%0d tohost=%0d sram_clk_en=%0d", halted, tohost, sram_clk_en);
       $finish;
     end else begin
-      $display("FAIL: halted=%0d tohost=%0h sram_clk_en=%0d", halted, tohost, sram_clk_en);
+      $display("FAIL: halted=%b tohost=%h sram_clk_en=%b", halted, tohost, sram_clk_en);
       $fatal(1);
     end
   end

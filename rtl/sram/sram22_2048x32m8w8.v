@@ -58,4 +58,3 @@ module sram22_2048x32m8w8(
   end
 
 endmodule
-

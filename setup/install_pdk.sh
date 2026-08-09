@@ -49,7 +49,8 @@ if [[ -z "$OPEN_PDKS_REV" ]]; then
 fi
 
 echo "Enabling sky130 @ $OPEN_PDKS_REV (download can be several GB)..."
-volare enable --pdk-root "$PDK_ROOT" --pdk sky130 "$OPEN_PDKS_REV"
+# Include high-speed (+ other) stdcell libs, not just the default HD subset.
+volare enable --pdk-root "$PDK_ROOT" --pdk sky130 -l all "$OPEN_PDKS_REV"
 
 echo ""
 echo "Done. Disk usage:"
