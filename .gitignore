@@ -51,3 +51,7 @@ synthesis/**/macros/_*.py
 synthesis/**/macros/_*.tcl
 synthesis/**/macros/_*.gds
 synthesis/**/macros/*.pre_*
+
+# N-MNIST download / extraction cache
+firmware/nmnist/data/
+firmware/nmnist/*.pyc

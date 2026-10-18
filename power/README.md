@@ -72,6 +72,25 @@ For each: `total_uW` and `static_uW` (OpenSTA **Leakage**). `--depth` is accepte
 | `OUT` | `power/out_<name>_time/` | Output directory |
 | `SCOPE` | `tb_fw_mnist.u_soc` | VCD hierarchy to sample |
 
+## Event-driven N-MNIST workload (energy per event, to the decision, per sample)
+
+The N-MNIST firmware wakes once per input event and sleeps in between, so its energy is the per-event awake
+energy times the number of events plus the sleep power over the stream. The full stream (about 1,700 events, 100 ms)
+is too long for an SDF gate-level VCD, so the flow measures the per-event activity on a shortened stream and
+combines it with the full-stream testbench report:
+
+```bash
+RUN_DIR=<openlane run> ./measure_nmnist.sh 100        # K = events in the gate-level power run
+#  1. simulation/run_sim.sh nmnist            -> docs/results/nmnist_sim.txt (decision latency, awake cycles / event)
+#  2. trim_sample.py + run_gls.sh nmnist --vcd (SDF)  on the first K events
+#  3. run_avg_power.sh (SCOPE=tb_fw_nmnist.u_soc)     -> docs/results/nmnist_power_energy.txt (P_awake, P_sleep)
+#  4. nmnist_energy.py                                 -> docs/results/nmnist_energy.txt
+# FULL_GLS=1 adds a zero-delay gate-level run of the whole stream (PASS check on the netlist).
+```
+
+`nmnist_energy.py` reports energy per event, energy to the decision (`gpio_done` edge), energy per sample and the
+average power at the sample's real-time event rate.
+
 ## Method (short)
 
 1. Count 0→1 toggles (and duty) in the VCD — globally or per time window.  

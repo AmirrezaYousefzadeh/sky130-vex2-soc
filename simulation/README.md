@@ -39,8 +39,14 @@ Open `*.vcd` in Cursor with the **Surfer** or **VaporView** extension, or GTKWav
 |------|----------------|-------------------------|
 | `smoke` | Tiny hand-loaded program writes `tohost` and halts | `waveform.vcd` / `waveform_gls.vcd` |
 | `fw` | Builds firmware (`firmware/`) and runs MNIST MLP until halt | off unless `--vcd` → same names |
+| `nmnist` | Builds the event-driven N-MNIST SNN (`WORKLOAD=nmnist`) and replays one sample's event stream: one wake per event (`tb_fw_nmnist.v`, times from `firmware/nmnist/events.hex`) | off unless `--vcd` → same names |
 
 PASS for firmware: `tohost = predicted_digit + 1`, with TB `wake` / `gpio_done` and two 10k-cycle clock-gated sleeps around one inference.
+
+`nmnist` extras: `NMNIST_DIR=<dir>` selects another exported sample (e.g. a trimmed copy from `firmware/nmnist/trim_sample.py`),
+`OPT=-O3` the firmware optimisation level, `DUMP_FROM_EV`/`DUMP_TO_EV` (GLS) limit the VCD to a window of events,
+`TIMEOUT_CYCLES` defaults to 20 M. The TB prints awake cycles per event, late deliveries and the decision time
+(`gpio_done` edge); PASS codes 1..10 = decided digit + 1, 11..20 = bit-exact but undecided (short streams).
 
 ## Parameters (both scripts)
 

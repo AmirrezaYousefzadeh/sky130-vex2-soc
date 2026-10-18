@@ -49,6 +49,26 @@ Group breakdown (blended): clock 44.8%, sequential 38.4%, macro 11.9%, combo 4.9
 | Die outline (floorplan) | 4.000 mm² |
 | Clock / implied Fmax | 50 MHz target / **53.0 MHz** (setup+hold MET) |
 
+### Event-driven N-MNIST workload (asynchronous inference, one event at a time)
+
+A second workload ([`firmware/nmnist/`](firmware/nmnist/)): a spiking classifier for the N-MNIST event stream
+that is trained and executed **event by event, without a time step or a leak tick**. The core wakes for every
+input event, updates 32 integrate-and-fire neurons and 10 output integrators, checks the decision (argmax with a
+margin) and sleeps again; the testbench replays the sample's event times and records the decision edge.
+Same 8x8 input resolution and hidden size as the MNIST MLP above.
+
+| Metric | Value |
+|--------|--------|
+| Network | 128 (8x8x2 pooled events) → 32 IF → 10, int8 weights, no leak, first saccade (100 ms) |
+| Test accuracy (exact per-event reference, 10 000 samples) | **NMNIST_ACC** |
+| Decision accuracy / median latency at margin NMNIST_MARGIN | NMNIST_DEC_ACC / **NMNIST_DEC_LAT ms** after stimulus onset |
+| Awake cycles per event (`-O3`, 50 MHz) | NMNIST_CYC mean (NMNIST_US µs), NMNIST_CYC_MAX max |
+| Energy per event / to the decision / per sample | NMNIST_E_EVENT nJ / **NMNIST_E_DEC µJ** / NMNIST_E_SAMPLE µJ |
+| Average power at the sample's real-time event rate | NMNIST_P_AVG mW (awake duty NMNIST_DUTY) |
+
+Raw files: `docs/results/nmnist_*.txt`; method in [`firmware/nmnist/README.md`](firmware/nmnist/README.md) and
+[`power/README.md`](power/README.md). Reproduce with `./power/measure_nmnist.sh`.
+
 ## Locked choices
 
 | Block | Choice | Notes |

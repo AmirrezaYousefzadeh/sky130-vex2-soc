@@ -297,12 +297,48 @@ case "$MODE" in
       echo "Power: ./power/run_avg_power.sh $VCD_PATH"
     fi
     ;;
+  nmnist)
+    # Event-driven N-MNIST SNN (one wake per event). Long stream: dump the VCD for a window of events only
+    # (DUMP_FROM_EV / DUMP_TO_EV, default all) and extrapolate per-event energy with power/nmnist_energy.py.
+    NMNIST_DIR="${NMNIST_DIR:-$ROOT/firmware/nmnist}"
+    make -C "$ROOT/firmware" all WORKLOAD=nmnist NMNIST_DIR="$NMNIST_DIR"
+    cp -f "$ROOT/firmware/build/imem.hex" "$ROOT/firmware/build/dmem.hex" .
+    cp -f "$NMNIST_DIR/events.hex" "$NMNIST_DIR/events.vh" .
+    DUMP_VCD="${DUMP_VCD:-0}"
+    DUMP_FLAGS=()
+    if [[ "$DUMP_VCD" == "1" ]]; then
+      VCD_PATH="$SIM/$VCD_NAME"
+      DUMP_FLAGS+=(
+        -DDUMP_PATH="\"$VCD_PATH\""
+        -DDUMP_LEVEL="$DUMP_LEVEL"
+        -DDUMP_MODULE=tb_fw_nmnist.u_soc
+      )
+      [[ -n "${DUMP_FROM_EV:-}" ]] && DUMP_FLAGS+=(-DDUMP_FROM_EV="$DUMP_FROM_EV")
+      [[ -n "${DUMP_TO_EV:-}" ]] && DUMP_FLAGS+=(-DDUMP_TO_EV="$DUMP_TO_EV")
+      echo "Gate-level VCD dump enabled: $VCD_PATH (dumpvars level=$DUMP_LEVEL, events ${DUMP_FROM_EV:-0}..${DUMP_TO_EV:-last})"
+    fi
+    TIMEOUT="${TIMEOUT_CYCLES:-20000000}"
+    echo "==> GLS N-MNIST firmware compile (netlist: $NETLIST)"
+    TIMEOUT_CYCLES="$TIMEOUT" compile_and_run fw_nmnist_gls.vvp \
+      -DIMEM_HEX="\"imem.hex\"" \
+      -DDMEM_HEX="\"dmem.hex\"" \
+      -DTIMEOUT_CYCLES="$TIMEOUT" \
+      ${EXTRA_DEFS:-} \
+      "${DUMP_FLAGS[@]}" \
+      "$SIM/tb_fw_nmnist.v"
+    if [[ "$DUMP_VCD" == "1" ]]; then
+      python3 "$SIM/vcd_rescale_ns.py" "$VCD_PATH"
+      ln -sfn "$VCD_NAME" "$SIM/latest_gls.vcd"
+      echo "Gate-level waveform: $VCD_PATH"
+      echo "Power: SCOPE=tb_fw_nmnist.u_soc ./power/run_avg_power.sh $VCD_PATH"
+    fi
+    ;;
   -h|--help|help)
     sed -n '2,45p' "$0"
     exit 0
     ;;
   *)
-    echo "Unknown mode: $MODE (use smoke|fw)" >&2
+    echo "Unknown mode: $MODE (use smoke|fw|nmnist)" >&2
     exit 2
     ;;
 esac
