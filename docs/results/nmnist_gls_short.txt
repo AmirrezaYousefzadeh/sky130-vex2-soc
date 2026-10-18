@@ -1,0 +1,72 @@
+==> Cleaning previous GLS artifacts
+==> Sanitizing SDF for Icarus
+wrote /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/simulation/build_gls/sky130_vex2_soc.icarus.sdf
+header_fixes=3
+dropped_interconnect=56093
+dropped_timingcheck=1886
+unwrapped_cond=63469
+dropped_bitselect_iopath=64
+dropped_empty_cells=3
+fixed_flat_instances=3
+size=6651078
+wrote /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/simulation/build_gls/gls_regfile_init.vh
+==> GLS inputs
+RUN_DIR=/home/yousefzadeha/workspace/skywater/synthesis/sky130_vex2_soc/runs/sky130_vex2_soc
+STD_CELL_LIBRARY=sky130_fd_sc_ms
+netlist=/home/yousefzadeha/workspace/skywater/synthesis/sky130_vex2_soc/runs/sky130_vex2_soc/final/nl/sky130_vex2_soc.nl.v
+==> GLS mode: SDF timing (nom_tt_025C_1v80)
+SDF: /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/simulation/build_gls/sky130_vex2_soc.icarus.sdf
+Clock: edit CLK_PERIOD_NS in simulation/tb_*.v
+Note: SDF annotate on this SoC can take a long time (Icarus + large SDF).
+make: Entering directory '/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware'
+make clean
+make[1]: Entering directory '/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware'
+rm -rf /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build
+make[1]: Leaving directory '/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware'
+make /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/nmnist_snn.elf /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/imem.hex /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/dmem.hex sizes WORKLOAD=nmnist
+make[1]: Entering directory '/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware'
+mkdir -p /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build
+/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/tools/riscv-none-elf-gcc/bin/riscv-none-elf-gcc -march=rv32im_zicsr -mabi=ilp32 -O3 -g -ffreestanding -nostdlib -Wall -Wextra -fno-builtin -fno-common -ffunction-sections -fdata-sections -I/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware -DNMNIST_WEIGHTS_H_FILE='"/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/nmnist/short100/weights.h"' -c /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/crt0.S -o /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/crt0.o
+/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/tools/riscv-none-elf-gcc/bin/riscv-none-elf-gcc -march=rv32im_zicsr -mabi=ilp32 -O3 -g -ffreestanding -nostdlib -Wall -Wextra -fno-builtin -fno-common -ffunction-sections -fdata-sections -I/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware -DNMNIST_WEIGHTS_H_FILE='"/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/nmnist/short100/weights.h"' -c /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/nmnist/nmnist_snn.c -o /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/nmnist_snn.o
+/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/nmnist/nmnist_snn.c:23:16: warning: 'fired' defined but not used [-Wunused-variable]
+23 | static uint8_t fired[NMNIST_HID];  /* refractory flag (one spike per sample) when NMNIST_REFRACTORY */
+|                ^~~~~
+/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/tools/riscv-none-elf-gcc/bin/riscv-none-elf-gcc -march=rv32im_zicsr -mabi=ilp32 -nostdlib -T/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/link.ld -Wl,--gc-sections -Wl,-Map=/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/nmnist_snn.map /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/crt0.o /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/nmnist_snn.o -o /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/nmnist_snn.elf -lgcc
+/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/tools/riscv-none-elf-gcc/bin/riscv-none-elf-objdump -d /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/nmnist_snn.elf > /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/nmnist_snn.dis
+python3 /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/scripts/elf2mem.py /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/nmnist_snn.elf --imem /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/imem.hex --dmem /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/dmem.hex
+elf2mem: entry=0x00000000 imem=/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/imem.hex dmem=/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/dmem.hex
+make[1]: '/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/dmem.hex' is up to date.
+/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/tools/riscv-none-elf-gcc/bin/riscv-none-elf-size /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/nmnist_snn.elf
+text	   data	    bss	    dec	    hex	filename
+6228	      0	    172	   6400	   1900	/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/nmnist_snn.elf
+make[1]: Leaving directory '/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware'
+make: Leaving directory '/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware'
+Gate-level VCD dump enabled: /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/simulation/waveform_gls_nmnist.vcd (dumpvars level=1, events 0..last)
+==> GLS N-MNIST firmware compile (netlist: /home/yousefzadeha/workspace/skywater/synthesis/sky130_vex2_soc/runs/sky130_vex2_soc/final/nl/sky130_vex2_soc.nl.v)
+==> Compiling (warnings → /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/simulation/build_gls/iverilog_warn.log) ...
+iverilog ok (509 warnings logged)
+==> Running fw_nmnist_gls.vvp ...
+(SDF: Icarus is silent until annotate finishes — often 5–20+ min;
+then cycle %/ETA. Log: /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/simulation/build_gls/sdf_annotate.log)
+GLS: deposited 0 into CPU regfile + read ports
+SDF ERROR: /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/simulation/build_gls/sky130_vex2_soc.icarus.sdf:225104: Cannot find u_dmem_icg in scope tb_fw_nmnist.u_soc.
+SDF ERROR: /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/simulation/build_gls/sky130_vex2_soc.icarus.sdf:225113: Cannot find u_imem_icg in scope tb_fw_nmnist.u_soc.
+SDF ERROR: /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/simulation/build_gls/sky130_vex2_soc.icarus.sdf:225122: Cannot find u_sleep in scope tb_fw_nmnist.u_soc.
+SDF: annotated /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/simulation/build_gls/sky130_vex2_soc.icarus.sdf onto u_soc
+VCD info: dumpfile /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/simulation/waveform_gls_nmnist.vcd opened for output.
+WAVEFORM: dumping to /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/simulation/waveform_gls_nmnist.vcd (level=1, events 0..99)
+CLK: period=20 ns  reset_cycles=64  events=100
+FW: loaded imem.hex, dmem.hex and events.hex
+TB: reset released at t=1280000
+TB: power-on sleep - wake for init
+TB: stream starts at cycle 556 (t=11130000)
+TB: 100 events delivered; awake cycles per event mean 1086 max 1179; late deliveries 14 (max 1061 cycles)
+TB: no decision within the stream
+TB: wake for halt
+PASS: undecided (expected for this short stream), argmax=0  tohost=11  stream_cycles=1010960  awake_cycles=108650
+/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/simulation/tb_fw_nmnist.v:207: $finish called at 20272850000 (1ps)
+GLS done in 1h44m (6299.4s)                                        
+SDF: finished with 3 error/VPI lines (see /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/simulation/build_gls/sdf_annotate.log)
+VCD timescale: 1ps → 1ns (/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/simulation/waveform_gls_nmnist.vcd)
+Gate-level waveform: /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/simulation/waveform_gls_nmnist.vcd
+Power: SCOPE=tb_fw_nmnist.u_soc ./power/run_avg_power.sh /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/simulation/waveform_gls_nmnist.vcd

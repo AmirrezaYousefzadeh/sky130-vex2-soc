@@ -103,12 +103,42 @@ case "$MODE" in
       echo "Waveform: $VCD_PATH"
     fi
     ;;
+  nmnist)
+    # Event-driven N-MNIST SNN: one wake per event, times replayed from NMNIST_DIR/events.hex
+    NMNIST_DIR="${NMNIST_DIR:-$ROOT/firmware/nmnist}"
+    make -C "$ROOT/firmware" all WORKLOAD=nmnist NMNIST_DIR="$NMNIST_DIR"
+    cp -f "$ROOT/firmware/build/imem.hex" "$ROOT/firmware/build/dmem.hex" .
+    cp -f "$NMNIST_DIR/events.hex" "$NMNIST_DIR/events.vh" .
+    DUMP_VCD="${DUMP_VCD:-0}"
+    DUMP_FLAGS=()
+    if [[ "$DUMP_VCD" == "1" ]]; then
+      VCD_PATH="$SIM/$VCD_NAME"
+      DUMP_FLAGS+=(-DDUMP_PATH="\"$VCD_PATH\"")
+      echo "VCD dump enabled: $VCD_PATH"
+    fi
+    TIMEOUT="${TIMEOUT_CYCLES:-20000000}"
+    iverilog -g2012 -o fw_nmnist.vvp \
+      -DIMEM_HEX="\"imem.hex\"" \
+      -DDMEM_HEX="\"dmem.hex\"" \
+      -DTIMEOUT_CYCLES="$TIMEOUT" \
+      ${EXTRA_DEFS:-} \
+      "${DUMP_FLAGS[@]}" \
+      "${RTL[@]}" \
+      "$SIM/tb_fw_nmnist.v"
+    echo "Running event-driven N-MNIST firmware simulation..."
+    vvp fw_nmnist.vvp
+    if [[ "$DUMP_VCD" == "1" ]]; then
+      python3 "$SIM/vcd_rescale_ns.py" "$VCD_PATH"
+      ln -sfn "$VCD_NAME" "$SIM/latest.vcd"
+      echo "Waveform: $VCD_PATH"
+    fi
+    ;;
   -h|--help|help)
     sed -n '2,16p' "$0"
     exit 0
     ;;
   *)
-    echo "Unknown mode: $MODE (use smoke|fw)" >&2
+    echo "Unknown mode: $MODE (use smoke|fw|nmnist)" >&2
     exit 2
     ;;
 esac

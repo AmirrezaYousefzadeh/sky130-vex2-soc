@@ -1,0 +1,35 @@
+==> Cleaning previous RTL sim artifacts
+make: Entering directory '/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware'
+make clean
+make[1]: Entering directory '/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware'
+rm -rf /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build
+make[1]: Leaving directory '/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware'
+make /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/nmnist_snn.elf /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/imem.hex /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/dmem.hex sizes WORKLOAD=nmnist
+make[1]: Entering directory '/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware'
+mkdir -p /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build
+/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/tools/riscv-none-elf-gcc/bin/riscv-none-elf-gcc -march=rv32im_zicsr -mabi=ilp32 -O3 -g -ffreestanding -nostdlib -Wall -Wextra -fno-builtin -fno-common -ffunction-sections -fdata-sections -I/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware -DNMNIST_WEIGHTS_H_FILE='"/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/nmnist/weights.h"' -c /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/crt0.S -o /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/crt0.o
+/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/tools/riscv-none-elf-gcc/bin/riscv-none-elf-gcc -march=rv32im_zicsr -mabi=ilp32 -O3 -g -ffreestanding -nostdlib -Wall -Wextra -fno-builtin -fno-common -ffunction-sections -fdata-sections -I/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware -DNMNIST_WEIGHTS_H_FILE='"/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/nmnist/weights.h"' -c /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/nmnist/nmnist_snn.c -o /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/nmnist_snn.o
+/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/nmnist/nmnist_snn.c:23:16: warning: 'fired' defined but not used [-Wunused-variable]
+   23 | static uint8_t fired[NMNIST_HID];  /* refractory flag (one spike per sample) when NMNIST_REFRACTORY */
+      |                ^~~~~
+/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/tools/riscv-none-elf-gcc/bin/riscv-none-elf-gcc -march=rv32im_zicsr -mabi=ilp32 -nostdlib -T/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/link.ld -Wl,--gc-sections -Wl,-Map=/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/nmnist_snn.map /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/crt0.o /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/nmnist_snn.o -o /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/nmnist_snn.elf -lgcc
+/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/tools/riscv-none-elf-gcc/bin/riscv-none-elf-objdump -d /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/nmnist_snn.elf > /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/nmnist_snn.dis
+python3 /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/scripts/elf2mem.py /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/nmnist_snn.elf --imem /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/imem.hex --dmem /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/dmem.hex
+elf2mem: entry=0x00000000 imem=/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/imem.hex dmem=/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/dmem.hex
+make[1]: '/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/dmem.hex' is up to date.
+/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/tools/riscv-none-elf-gcc/bin/riscv-none-elf-size /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/nmnist_snn.elf
+   text	   data	    bss	    dec	    hex	filename
+   7884	      0	    172	   8056	   1f78	/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware/build/nmnist_snn.elf
+make[1]: Leaving directory '/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware'
+make: Leaving directory '/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/firmware'
+Running event-driven N-MNIST firmware simulation...
+CLK: period=20 ns  reset_cycles=64  events=1745
+FW: loaded imem.hex, dmem.hex and events.hex
+TB: reset released at t=1280000
+TB: power-on sleep - wake for init
+TB: stream starts at cycle 557 (t=11150000)
+TB: 1745 events delivered; awake cycles per event mean 917 max 1222; late deliveries 921 (max 5644 cycles)
+TB: DECISION at event 201, t=26615780 ns after stream start (1330789 cycles); event time 26572000 ns
+TB: wake for halt
+PASS: digit=0  tohost=1  decision_event=201  decision_ns=26615780  stream_cycles=4974883  awake_cycles=1600268
+/home/yousefzadeha/workspace/vex2/sky130-vex2-soc/simulation/tb_fw_nmnist.v:202: $finish called at 99551310000 (1ps)
