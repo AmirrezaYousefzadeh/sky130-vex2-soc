@@ -72,6 +72,30 @@ For each: `total_uW` and `static_uW` (OpenSTA **Leakage**). `--depth` is accepte
 | `OUT` | `power/out_<name>_time/` | Output directory |
 | `SCOPE` | `tb_fw_mnist.u_soc` | VCD hierarchy to sample |
 
+## Activity-aware (per-pin) power: `run_pin_power.sh`
+
+The two flows above annotate one global toggle rate plus the SRAM control pins, so their awake power hardly depends on the
+workload. `run_pin_power.sh` is the activity-aware flow (ported from the author's `sky130-snn-bmi` repository): every
+variable of the `u_soc` scope gets its own measured transition rate and duty, and the clock propagation stops at the
+clock-gate outputs, so gated clock trees count what the waveform shows (sleep is then measured, not case-analysed).
+
+```bash
+python3 ./vcd_windows.py ../simulation/waveform_gls_mnist.vcd -o windows.json      # awake intervals, idle and decode windows
+./run_pin_power.sh ../simulation/waveform_gls_mnist.vcd out_pin_mnist_full                  # whole waveform
+./run_pin_power.sh ../simulation/waveform_gls_mnist.vcd out_pin_mnist_decode --begin B --end E   # one window (VCD time units)
+python3 ./pin_energy.py --kind mnist --decode out_pin_mnist_decode --idle out_pin_mnist_idle --full out_pin_mnist_full --windows windows.json
+```
+
+| piece | role |
+|---|---|
+| `tools/vcd_toggles.c` | streams the VCD (file of any size), counts transitions and high time per variable with OpenSTA's `read_power_activities` rules, optional `--begin/--end` window |
+| `tools/toggles_to_activity.py` | `set_power_activity` for every pin / net / port (nets are annotated through their driver pins) |
+| `power_pin_sta.tcl` | netlist + SPEF + liberty (vdd-only SRAM liberty `macros/*_pwr.lib`, so macro energy is not counted twice), `set_clock_sense -stop_propagation` at the clock gates, unannotated inputs at zero, `report_power` by group / instance / macro / clock tree |
+| `vcd_windows.py` | awake intervals, longest idle interval, MNIST decode window from `clk`, `sram_clk_en`, `wake`, `gpio_done` |
+| `pin_energy.py` | energy per inference (MNIST decode window) or per event / to the decision / per sample (N-MNIST) from the window results and the testbench reports |
+
+Each OpenSTA run takes a few minutes (netlist + SPEF load); the toggle count of a 3 GB waveform takes under a minute.
+
 ## Event-driven N-MNIST workload (energy per event, to the decision, per sample)
 
 The N-MNIST firmware wakes once per input event and sleeps in between, so its energy is the per-event awake

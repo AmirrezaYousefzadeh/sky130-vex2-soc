@@ -122,6 +122,9 @@ module tb_fw_nmnist;
   endtask
 
   integer i, t0, due, deliver, awake, awake_sum, awake_max, late, late_n, late_max, t_last;
+`ifdef EVENT_LOG
+  integer evlog;                    // per-event CSV (event, due cycle, delivery cycle, awake cycles) for the timing model
+`endif
   initial begin
 `ifdef SDF_ANNOTATE
     $sdf_annotate(`SDF_ANNOTATE, u_soc);
@@ -154,6 +157,10 @@ module tb_fw_nmnist;
     $display("TB: stream starts at cycle %0d (t=%0t)", t0, $time);
 
     awake_sum = 0; awake_max = 0; late_n = 0; late_max = 0;
+`ifdef EVENT_LOG
+    evlog = $fopen(`EVENT_LOG, "w");
+    $fwrite(evlog, "event,due_cycle,deliver_cycle,awake_cycles\n");
+`endif
     for (i = 0; i < N_EV; i = i + 1) begin
       due = t0 + ev_cyc[i];
       while (cyc < due) @(posedge clk);
@@ -169,6 +176,9 @@ module tb_fw_nmnist;
       awake = cyc - deliver;
       awake_sum = awake_sum + awake;
       if (awake > awake_max) awake_max = awake;
+`ifdef EVENT_LOG
+      $fwrite(evlog, "%0d,%0d,%0d,%0d\n", i, due - t0, deliver - t0, awake);
+`endif
 `ifdef DUMP_PATH
       if (i == `DUMP_TO_EV && `DUMP_TO_EV < N_EV - 1) $dumpoff;
 `endif

@@ -74,6 +74,22 @@ SDF gate-level simulation agree, bit-exact with the Python reference). The MNIST
 the event-driven classifier spends 4x that to its decision and 33x over the whole 100 ms stimulus, because every
 event updates all 32 neurons in software (about 56,000 neuron updates against 2,400 multiply-accumulates).
 
+<p align="center">
+  <img src="docs/figures/nmnist_vs_mnist_latency.png" alt="accuracy versus time since stimulus onset" width="640"/>
+</p>
+
+<p align="center"><em>Accuracy versus real hardware time since stimulus onset: event-driven N-MNIST on the SoC against the
+frame-based MNIST MLP (frame period + 1.39 ms inference)</em></p>
+
+Latency in hardware time ([`firmware/nmnist/hw_latency.py`](firmware/nmnist/hw_latency.py), all 10,000 test samples,
+cost model calibrated on the RTL event log: 901 + 70 cycles per hidden spike, queue of the testbench): the event-driven
+classifier is at 81 % accuracy 20 ms after stimulus onset, 92 % at 30 ms and 96 % at 50 ms, and its margin decision
+comes at a median of 26.9 ms; the processing backlog adds 0.02 ms to the median. A frame-based pipeline cannot answer
+before the frame is complete: 301 ms with a 300 ms frame period, 101 ms with a 100 ms one. The SoC keeps up with the
+stream at 50 MHz: 27 % awake duty on average, 55 % for the busiest sample, worst backlog 3.4 ms, and the mean event rate
+would be sustained down to a 13.5 MHz clock. (The MLP's 87.5 % is the accuracy of this repository's 3-epoch 8x8 demo
+network; the comparison is about time, not about the two accuracies.)
+
 ## Locked choices
 
 | Block | Choice | Notes |

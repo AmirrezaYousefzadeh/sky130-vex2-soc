@@ -56,3 +56,6 @@ synthesis/**/macros/*.pre_*
 firmware/nmnist/data/
 firmware/nmnist/*.pyc
 firmware/nmnist/short*/
+power/tools/vcd_toggles
+power/out_pin_*/
+power/out_pin_*_windows.json

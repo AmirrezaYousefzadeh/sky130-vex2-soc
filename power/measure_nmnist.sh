@@ -27,16 +27,26 @@ if [[ "${SKIP_GLS:-0}" != "1" ]]; then
   python3 "$ROOT/firmware/nmnist/trim_sample.py" --src "$ROOT/firmware/nmnist" --dst "$SHORT" --events "$K"
   echo "==> [2/4] gate-level simulation with SDF and VCD (short stream)"
   NMNIST_DIR="$SHORT" VCD_NAME="waveform_gls_nmnist.vcd" "$ROOT/simulation/run_gls.sh" nmnist --vcd 2>&1 | tee "$RES/nmnist_gls_short.txt" | grep -E "TB:|PASS|FAIL|SDF:|VCD|Gate-level"
-  echo "==> [3/4] OpenSTA awake / sleep power"
-  SCOPE=tb_fw_nmnist.u_soc "$ROOT/power/run_avg_power.sh" "$ROOT/simulation/waveform_gls_nmnist.vcd" 2>&1 | tail -5
-  cp -f "$ROOT/power/out_waveform_gls_nmnist/power_energy.txt" "$RES/nmnist_power_energy.txt"
+  echo "==> [3/4] per-pin OpenSTA power: whole short waveform and the longest idle window"
+  V="$ROOT/simulation/waveform_gls_nmnist.vcd"
+  python3 "$ROOT/power/vcd_windows.py" "$V" -o "$ROOT/power/out_pin_nmnist_windows.json"
+  "$ROOT/power/run_pin_power.sh" "$V" "$ROOT/power/out_pin_nmnist_full" 2>&1 | tail -2
+  IB=$(python3 -c "import json;print(json.load(open('$ROOT/power/out_pin_nmnist_windows.json'))['idle'][0])")
+  IE=$(python3 -c "import json;print(json.load(open('$ROOT/power/out_pin_nmnist_windows.json'))['idle'][1])")
+  "$ROOT/power/run_pin_power.sh" "$V" "$ROOT/power/out_pin_nmnist_idle" --begin "$IB" --end "$IE" 2>&1 | tail -2
+  if [[ "${LEGACY_POWER:-0}" == "1" ]]; then   # the global-activity flow of the MNIST snapshot, for comparison
+    SCOPE=tb_fw_nmnist.u_soc "$ROOT/power/run_avg_power.sh" "$V" 2>&1 | tail -5
+    cp -f "$ROOT/power/out_waveform_gls_nmnist/power_energy.txt" "$RES/nmnist_power_energy.txt"
+    python3 "$ROOT/power/nmnist_energy.py" --power "$RES/nmnist_power_energy.txt" --sim "$RES/nmnist_sim.txt" --out "$RES/nmnist_energy.txt"
+  fi
 fi
 
-echo "==> [3/4] energy / latency summary"
-python3 "$ROOT/power/nmnist_energy.py" --power "$RES/nmnist_power_energy.txt" --sim "$RES/nmnist_sim.txt" --out "$RES/nmnist_energy.txt"
+echo "==> [3/4] energy / latency summary (per-pin)"
+python3 "$ROOT/power/pin_energy.py" --kind nmnist --full "$ROOT/power/out_pin_nmnist_full" --idle "$ROOT/power/out_pin_nmnist_idle" \
+  --windows "$ROOT/power/out_pin_nmnist_windows.json" --short_sim "$RES/nmnist_gls_short.txt" --sim "$RES/nmnist_sim.txt" --out "$RES/nmnist_pin_energy.txt"
 
 if [[ "${FULL_GLS:-0}" == "1" ]]; then
   echo "==> [4/4] full stream at gate level (zero delay, no VCD)"
   "$ROOT/simulation/run_gls.sh" nmnist --no-sdf 2>&1 | tee "$RES/nmnist_gls_full.txt" | grep -E "TB:|PASS|FAIL"
 fi
-echo "done: $RES/nmnist_sim.txt $RES/nmnist_power_energy.txt $RES/nmnist_energy.txt"
+echo "done: $RES/nmnist_sim.txt $RES/nmnist_pin_energy.txt"

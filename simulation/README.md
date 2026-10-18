@@ -47,6 +47,8 @@ PASS for firmware: `tohost = predicted_digit + 1`, with TB `wake` / `gpio_done` 
 `OPT=-O3` the firmware optimisation level, `DUMP_FROM_EV`/`DUMP_TO_EV` (GLS) limit the VCD to a window of events,
 `TIMEOUT_CYCLES` defaults to 20 M. The TB prints awake cycles per event, late deliveries and the decision time
 (`gpio_done` edge); PASS codes 1..10 = decided digit + 1, 11..20 = bit-exact but undecided (short streams).
+`EXTRA_DEFS='-DEVENT_LOG="<path>.csv"'` writes one line per event (due cycle, delivery cycle, awake cycles) for
+`firmware/nmnist/hw_latency.py`.
 
 ## Parameters (both scripts)
 

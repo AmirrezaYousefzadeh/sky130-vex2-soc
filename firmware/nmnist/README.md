@@ -43,12 +43,29 @@ Options worth knowing: `--pool 8|10|12|16` (input grid), `--hidden`, `--refracto
 `--margin auto|N`, `--max_events K` (export only the first K events of the sample for a short power run),
 `--sample i` (which test sample to embed).
 
+## Where the data lives, and what the testbench does
+
+The channel of every event of the embedded sample (which of the 128 pooled inputs fired, in order) is a byte array
+in the RISC-V data memory. Its *timing* is not: a sensor would deliver the events one by one at their own times,
+and that is what the testbench emulates. It holds the event timestamps (`events.hex`, in clock cycles) and, at each
+event's time, wakes the core; the firmware pops the next channel from its list, processes it, and sleeps again. If an
+event falls due while the previous one is still being processed, the testbench waits for the core to sleep and
+delivers it late, exactly as a sensor FIFO would. So the core's compute time, idle time and backlog are those of a
+real-time stream; only the transport of the channel id (preloaded instead of an input port) is simplified. Adding an
+event input port would have meant changing and re-hardening the SoC.
+
 ## Measurement
 
 - **Latency**: the testbench ([`../../simulation/tb_fw_nmnist.v`](../../simulation/tb_fw_nmnist.v)) replays the
   sample's event times on the free-running clock, wakes the core for each event once it is asleep, and reports the
   awake cycles per event, late deliveries (events that fell due while the previous one was still being processed)
-  and the decision time.
+  and the decision time. With `-DEVENT_LOG=<csv>` it also logs every event's due time, delivery time and awake cycles.
+- **Hardware time for the whole test set** ([`hw_latency.py`](hw_latency.py)): the awake cycles of an event are
+  `c0 + c1 x (hidden spikes it fires)`, fitted on that log; every test sample is then replayed through the exact
+  reference with that cost and the single-core queue of the testbench, which gives the accuracy versus *hardware*
+  time (output valid only once the event has been processed), the backlog statistics and the minimum clock that keeps
+  up with the stream. The same script evaluates the MNIST MLP of this repository (int8, 8x8) and draws both on one
+  time axis, the MLP as a frame-based pipeline (frame period + 1.39 ms of inference).
 - **Energy**: `./simulation/run_gls.sh nmnist --vcd` on a short export (`--max_events 100`) gives the gate-level
   activity of the per-event processing; `power/run_avg_power.sh` turns it into awake and sleep power; and
   [`../../power/nmnist_energy.py`](../../power/nmnist_energy.py) combines that with the full-stream testbench
@@ -75,6 +92,14 @@ Embedded test sample (digit 0, 1,745 events in 100 ms), firmware built with `-O3
 | energy per event | 234 nJ |
 | energy to the decision | **51.5 µJ** (47.2 µJ awake + 4.3 µJ sleep) |
 | energy per 100 ms sample | 421 µJ; 4.23 mW average at the sample's real-time event rate |
+
+Hardware-time latency over the whole test set (`docs/results/nmnist_hw_latency.json`, figure
+`docs/figures/nmnist_vs_mnist_latency.png`): cost model 901 + 70 cycles per hidden spike (rms residual 59 cycles,
+delivery times within 61 cycles of the testbench on average); accuracy 81 % at 20 ms, 92 % at 30 ms, 96 % at 50 ms
+in hardware time, indistinguishable from sensor time; margin decision at a median of 26.9 ms (hardware) for 97 % of
+the samples, 97.4 % of those decisions correct; awake duty 27 % mean, 55 % maximum; worst backlog 3.4 ms; the mean event
+rate is sustained down to a 13.5 MHz clock. The frame-based MNIST MLP of this repository answers 1.39 ms after a frame
+is complete, i.e. at 101 or 301 ms for 100 or 300 ms frame periods, with 87.5 % accuracy (its 3-epoch 8x8 training).
 
 For comparison, the dense MNIST MLP inference on the same SoC costs 12.65 µJ: processing 1,745 events through
 32 neurons in software is about 56,000 neuron updates against 2,400 multiply-accumulates. The per-event schedule

@@ -1,0 +1,11 @@
+Event-driven N-MNIST on sky130_vex2_soc: per-pin OpenSTA energy / latency
+clock           : 20 ns (50.0 MHz)
+gate-level window : first 100 events, 20.273 ms, awake 2.181 ms (10.8 %), average power 1.453 mW   [sequential 0.572 mW, combinational 0.212 mW, clock 0.659 mW, macro 0.011 mW, pad 0.000 mW; leakage 0.005 mW]
+P_sleep (idle window, clock running, core gated) : 0.076 mW   [sequential 0.013 mW, combinational 0.000 mW, clock 0.058 mW, macro 0.005 mW, pad 0.000 mW; leakage 0.005 mW]
+P_awake (derived) : 12.875 mW   (257.5 pJ per awake cycle)
+energy / event  : 236.1 nJ at the full-stream mean of 917 awake cycles per event (280.7 nJ at the 1086 cycles per event of the gate-level window)
+full stream (RTL testbench): 1745 events, awake cycles / event mean 917, max 1222 (18.3 us); late deliveries 921 (max backlog 112.9 us); awake 32.01 of 99.50 ms (32.2 % duty)
+energy / sample : 417.21 uJ   (awake 412.08 uJ + sleep 5.14 uJ)
+average power   : 4.193 mW at the sample's real-time event rate
+decision        : event 202 of 1745, at 26.62 ms after stream start (event time 26.57 ms, backlog 43.8 us)
+energy to decision : 49.44 uJ  (47.70 uJ awake + 1.74 uJ sleep)
