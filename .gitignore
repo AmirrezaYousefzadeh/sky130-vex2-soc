@@ -55,3 +55,4 @@ synthesis/**/macros/*.pre_*
 # N-MNIST download / extraction cache
 firmware/nmnist/data/
 firmware/nmnist/*.pyc
+firmware/nmnist/short*/

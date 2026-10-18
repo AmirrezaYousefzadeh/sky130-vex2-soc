@@ -54,4 +54,34 @@ Options worth knowing: `--pool 8|10|12|16` (input grid), `--hidden`, `--refracto
   [`../../power/nmnist_energy.py`](../../power/nmnist_energy.py) combines that with the full-stream testbench
   report into energy per event, energy to the decision and energy per sample.
 
-Results are summarised in the root README and `docs/results/nmnist_*.txt`.
+## Results (checked-in snapshot, 50 MHz, sky130_fd_sc_ms, TT 1.8 V)
+
+Exact per-event reference on the 10,000 test samples (`report.json`): **96.5 %** accuracy at the end of the
+first saccade; 369 hidden spikes per sample; with the exported margin of 256 the decision is correct for 94.3 % of
+the samples (96.8 % decide within 100 ms) at a median of **26.9 ms** after stimulus onset (82 % accuracy at 20 ms,
+91.5 % at 30 ms, 95.8 % at 50 ms). A refractory period of one spike per sample drops accuracy to 70 %; a 10x10 grid
+or 48 hidden neurons gain at most one point and do not fit next to the event list in 8 KiB.
+
+Embedded test sample (digit 0, 1,745 events in 100 ms), firmware built with `-O3`, testbench replay on the RTL
+(`docs/results/nmnist_sim.txt`), gate-level SDF run of the first 100 events for power (`nmnist_gls_short.txt`,
+`nmnist_power_energy.txt`), combined by `nmnist_energy.py` (`nmnist_energy.txt`):
+
+| Metric | Value |
+|---|---|
+| awake cycles per event | 917 mean, 1,222 max (18.3 µs mean at 50 MHz) |
+| real-time behaviour | 921 of 1,745 events delivered late, worst backlog 113 µs (the core keeps up on average: 32 % duty) |
+| decision | event 202, 26.62 ms after stream start (event time 26.57 ms, 44 µs processing backlog), bit-exact with the reference |
+| awake / sleep power (OpenSTA) | 12.75 mW / 0.19 mW |
+| energy per event | 234 nJ |
+| energy to the decision | **51.5 µJ** (47.2 µJ awake + 4.3 µJ sleep) |
+| energy per 100 ms sample | 421 µJ; 4.23 mW average at the sample's real-time event rate |
+
+For comparison, the dense MNIST MLP inference on the same SoC costs 12.65 µJ: processing 1,745 events through
+32 neurons in software is about 56,000 neuron updates against 2,400 multiply-accumulates. The per-event schedule
+buys the early decision (26 ms into a 100 ms stimulus) and a duty cycle that follows the sensor, not energy.
+
+Caveat on the power model: `run_avg_power.sh` applies a global toggle rate (0.01 per cycle) to all nets, the
+measured activity only to the SRAM `ce`/`we` pins, and a case analysis of the core clock gate for sleep. The
+awake power is therefore the same for both workloads (12.75 mW) and the energy figures above scale with awake
+cycles and duty, not with the switching detail of the per-event code. A per-pin activity flow (as in the author's
+`sky130-snn-bmi` repository) would refine the absolute numbers; the cycle counts and the latency are exact.

@@ -1,0 +1,29 @@
+Activity-based power / energy summary
+vcd                 : /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/simulation/waveform_gls_nmnist.vcd
+cycles              : 1013643
+vcd_sim_clock       : 100 MHz (10 ns TB period)
+design_clock        : 50 MHz (20 ns)
+activity_median     : 0.004396 / cycle  (data path; clock uses create_clock)
+  reset             : act=0.000000  duty=0.000063
+  sram_clk_en       : act=0.000102  duty=0.107559
+  imem_ce           : act=0.053748  duty=0.053134
+  halted            : act=0.000001  duty=0.000001
+  dmem_we           : act=0.007485  duty=0.003989
+  dmem_ce           : act=0.013372  duty=0.012470
+
+power_total         : 1.538437 mW  (1.538437e-03 W)  [blended: duty*P_awake+(1-duty)*P_sleep]
+core_clk_en_duty    : 0.107559
+power_awake         : 12.747880 mW  (core ICG GATE=1)
+power_sleep         : 0.187454 mW  (core ICG GATE=0)
+  sequential        : 0.546642 mW  (35.5%)
+  combinational     : 0.153907 mW  (10.0%)
+  clock             : 0.667100 mW  (43.4%)
+  macro             : 0.170746 mW  (11.1%)
+  pad               : 0.000000 mW  (0.0%)
+runtime_one_infer   : 20.272860 ms
+energy_one_infer    : 31.188513 µJ  (3.118851e-05 J)
+
+Note: energy ≈ P_avg × (cycles × design_period).
+Clock tree: OpenSTA Clock group from create_clock + set_propagated_clock + SPEF (not VCD median).
+Sleep: core ICG GATE case-analyzed; average is duty-weighted blend of awake/sleep reports (set_power_activity on GATE is ignored).
+Liberty / period should match the hardened run (TT 1.8 V).

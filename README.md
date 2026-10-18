@@ -60,14 +60,19 @@ Same 8x8 input resolution and hidden size as the MNIST MLP above.
 | Metric | Value |
 |--------|--------|
 | Network | 128 (8x8x2 pooled events) → 32 IF → 10, int8 weights, no leak, first saccade (100 ms) |
-| Test accuracy (exact per-event reference, 10 000 samples) | **NMNIST_ACC** |
-| Decision accuracy / median latency at margin NMNIST_MARGIN | NMNIST_DEC_ACC / **NMNIST_DEC_LAT ms** after stimulus onset |
-| Awake cycles per event (`-O3`, 50 MHz) | NMNIST_CYC mean (NMNIST_US µs), NMNIST_CYC_MAX max |
-| Energy per event / to the decision / per sample | NMNIST_E_EVENT nJ / **NMNIST_E_DEC µJ** / NMNIST_E_SAMPLE µJ |
-| Average power at the sample's real-time event rate | NMNIST_P_AVG mW (awake duty NMNIST_DUTY) |
+| Test accuracy (exact per-event reference, 10 000 samples) | **96.51 %** |
+| Decision accuracy / median latency at margin 256 | 94.3 % / **26.9 ms** after stimulus onset |
+| Awake cycles per event (`-O3`, 50 MHz) | 917 mean (18.3 µs), 1222 max |
+| Energy per event / to the decision / per sample | 233.8 nJ / **51.52 µJ** / 420.65 µJ |
+| Average power at the sample's real-time event rate | 4.228 mW (awake duty 32.2 %) |
 
 Raw files: `docs/results/nmnist_*.txt`; method in [`firmware/nmnist/README.md`](firmware/nmnist/README.md) and
 [`power/README.md`](power/README.md). Reproduce with `./power/measure_nmnist.sh`.
+The awake power comes from the same global-activity OpenSTA model as the MNIST numbers above (12.75 mW awake,
+0.19 mW asleep), so the energies scale with awake cycles and duty; cycle counts and latency are exact (RTL and
+SDF gate-level simulation agree, bit-exact with the Python reference). The MNIST MLP inference costs 12.65 µJ;
+the event-driven classifier spends 4x that to its decision and 33x over the whole 100 ms stimulus, because every
+event updates all 32 neurons in software (about 56,000 neuron updates against 2,400 multiply-accumulates).
 
 ## Locked choices
 

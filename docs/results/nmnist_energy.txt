@@ -1,0 +1,14 @@
+Event-driven N-MNIST on sky130_vex2_soc: energy / latency
+power file      : /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/docs/results/nmnist_power_energy.txt
+sim log         : /home/yousefzadeha/workspace/vex2/sky130-vex2-soc/docs/results/nmnist_sim.txt
+clock           : 20 ns (50.0 MHz)
+P_awake / P_sleep : 12.748 mW / 0.187 mW  (OpenSTA, core ICG case analysis)
+events in stream: 1745
+awake cycles / event : mean 917, max 1222  (18.3 us mean)
+late deliveries : 921 (max backlog 5644 cycles = 112.9 us)
+energy / event  : 233.8 nJ
+stream length   : 99.50 ms, awake 32.01 ms (32.2 % duty)
+energy / sample : 420.65 uJ   (awake 408.00 uJ + sleep 12.65 uJ)
+average power   : 4.228 mW at the sample's real-time event rate
+decision        : event 202 of 1745, at 26.62 ms after stream start (event time 26.57 ms, processing backlog 43.8 us)
+energy to decision : 51.52 uJ  (47.23 uJ awake + 4.29 uJ sleep)
