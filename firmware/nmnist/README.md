@@ -88,10 +88,16 @@ Embedded test sample (digit 0, 1,745 events in 100 ms), firmware built with `-O3
 | awake cycles per event | 917 mean, 1,222 max (18.3 µs mean at 50 MHz) |
 | real-time behaviour | 921 of 1,745 events delivered late, worst backlog 113 µs (the core keeps up on average: 32 % duty) |
 | decision | event 202, 26.62 ms after stream start (event time 26.57 ms, 44 µs processing backlog), bit-exact with the reference |
-| awake / sleep power (OpenSTA) | 12.75 mW / 0.19 mW |
-| energy per event | 234 nJ |
-| energy to the decision | **51.5 µJ** (47.2 µJ awake + 4.3 µJ sleep) |
-| energy per 100 ms sample | 421 µJ; 4.23 mW average at the sample's real-time event rate |
+| awake / sleep power (per-pin OpenSTA, `nmnist_pin_energy.txt`) | 12.88 mW / 0.076 mW (legacy global-activity flow: 12.75 / 0.19 mW) |
+| energy per event | 236 nJ (257.5 pJ per awake cycle) |
+| energy to the decision | **49.4 µJ** (47.7 µJ awake + 1.7 µJ sleep); legacy flow 51.5 µJ |
+| energy per 100 ms sample | 417 µJ; 4.19 mW average at the sample's real-time event rate |
+
+"Energy to the decision" counts everything from the start of the stream until the event at which the output margin
+is reached (202 events here, 26.6 ms): the awake energy of those events plus the sleep power over the idle time in
+between. "Energy per sample" counts the whole 100 ms saccade, 1,745 events, because the firmware keeps processing
+after the decision (it only flags it); a deployment that stops at the decision pays the first number, one that keeps
+refining its answer until the stimulus ends pays the second.
 
 Hardware-time latency over the whole test set (`docs/results/nmnist_hw_latency.json`, figure
 `docs/figures/nmnist_vs_mnist_latency.png`): cost model 901 + 70 cycles per hidden spike (rms residual 59 cycles,
@@ -101,12 +107,11 @@ the samples, 97.4 % of those decisions correct; awake duty 27 % mean, 55 % maxim
 rate is sustained down to a 13.5 MHz clock. The frame-based MNIST MLP of this repository answers 1.39 ms after a frame
 is complete, i.e. at 101 or 301 ms for 100 or 300 ms frame periods, with 87.5 % accuracy (its 3-epoch 8x8 training).
 
-For comparison, the dense MNIST MLP inference on the same SoC costs 12.65 µJ: processing 1,745 events through
+For comparison, the dense MNIST MLP inference on the same SoC costs 12.3 µJ with the same per-pin flow (12.65 µJ legacy): processing 1,745 events through
 32 neurons in software is about 56,000 neuron updates against 2,400 multiply-accumulates. The per-event schedule
 buys the early decision (26 ms into a 100 ms stimulus) and a duty cycle that follows the sensor, not energy.
 
-Caveat on the power model: `run_avg_power.sh` applies a global toggle rate (0.01 per cycle) to all nets, the
-measured activity only to the SRAM `ce`/`we` pins, and a case analysis of the core clock gate for sleep. The
-awake power is therefore the same for both workloads (12.75 mW) and the energy figures above scale with awake
-cycles and duty, not with the switching detail of the per-event code. A per-pin activity flow (as in the author's
-`sky130-snn-bmi` repository) would refine the absolute numbers; the cycle counts and the latency are exact.
+Power model: the numbers above come from the activity-aware per-pin flow (`power/run_pin_power.sh`, every net of the
+SDF gate-level waveform annotated with its own toggle rate, gated clock trees counted from the waveform). The legacy
+global-activity flow of this repository (`run_avg_power.sh`) gives 12.75 mW awake, 0.19 mW asleep and 51.5 µJ to the
+decision, i.e. the same awake power within 1 % and a 2.5x higher sleep power; cycle counts and latency are exact either way.

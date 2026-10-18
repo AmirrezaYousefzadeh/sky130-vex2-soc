@@ -33,6 +33,10 @@ Raw files under [`docs/results/`](docs/results/).
 
 Group breakdown (blended): clock 44.8%, sequential 38.4%, macro 11.9%, combo 4.9%.
 
+Activity-aware per-pin flow (`power/run_pin_power.sh`, every net annotated from the SDF gate-level waveform):
+**12.31 µJ** per inference over the 0.98 ms decode window (12.62 mW), 8.96 mW average over the run, 0.077 mW asleep
+(`docs/results/mnist_pin_energy.txt`).
+
 ### Time-windowed power (N = 1000)
 
 | Metric | Value |
@@ -63,16 +67,19 @@ Same 8x8 input resolution and hidden size as the MNIST MLP above.
 | Test accuracy (exact per-event reference, 10 000 samples) | **96.51 %** |
 | Decision accuracy / median latency at margin 256 | 94.3 % / **26.9 ms** after stimulus onset |
 | Awake cycles per event (`-O3`, 50 MHz) | 917 mean (18.3 µs), 1222 max |
-| Energy per event / to the decision / per sample | 233.8 nJ / **51.52 µJ** / 420.65 µJ |
-| Average power at the sample's real-time event rate | 4.228 mW (awake duty 32.2 %) |
+| Awake / sleep power (per-pin OpenSTA, SDF gate-level activity) | 12.88 mW / 0.076 mW |
+| Energy per event / to the decision / per sample | 236 nJ / **49.4 µJ** / 417 µJ |
+| Average power at the sample's real-time event rate | 4.19 mW (awake duty 32.2 %) |
 
 Raw files: `docs/results/nmnist_*.txt`; method in [`firmware/nmnist/README.md`](firmware/nmnist/README.md) and
 [`power/README.md`](power/README.md). Reproduce with `./power/measure_nmnist.sh`.
-The awake power comes from the same global-activity OpenSTA model as the MNIST numbers above (12.75 mW awake,
-0.19 mW asleep), so the energies scale with awake cycles and duty; cycle counts and latency are exact (RTL and
-SDF gate-level simulation agree, bit-exact with the Python reference). The MNIST MLP inference costs 12.65 µJ;
-the event-driven classifier spends 4x that to its decision and 33x over the whole 100 ms stimulus, because every
-event updates all 32 neurons in software (about 56,000 neuron updates against 2,400 multiply-accumulates).
+The energies come from the activity-aware per-pin flow (`power/run_pin_power.sh`: every net annotated with its
+measured toggle rate from the SDF gate-level waveform, gated clock trees counted from the waveform); the legacy
+global-activity flow gives 12.75 mW awake and 51.5 µJ to the decision, within 5 %. Cycle counts and latency are
+exact (RTL and SDF gate-level simulation agree, bit-exact with the Python reference). With the same per-pin flow the
+MNIST MLP inference costs 12.3 µJ (12.65 µJ with the legacy flow); the event-driven classifier spends about
+4x that to its decision and 33x over the whole 100 ms stimulus, because every event updates all 32 neurons in software
+(about 56,000 neuron updates against 2,400 multiply-accumulates).
 
 <p align="center">
   <img src="docs/figures/nmnist_vs_mnist_latency.png" alt="accuracy versus time since stimulus onset" width="640"/>

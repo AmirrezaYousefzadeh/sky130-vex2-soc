@@ -1,0 +1,6 @@
+MNIST MLP on sky130_vex2_soc: per-pin OpenSTA energy
+clock           : 20 ns (50.0 MHz)
+P_sleep (idle window, clock running, core gated) : 0.077 mW   [sequential 0.014 mW, combinational 0.000 mW, clock 0.059 mW, macro 0.005 mW, pad 0.000 mW; leakage 0.005 mW]
+decode window   : 0.976 ms (48777 cycles), power 12.616 mW   [sequential 5.139 mW, combinational 1.619 mW, clock 5.640 mW, macro 0.218 mW, pad 0.000 mW; leakage 0.005 mW]
+energy / inference (decode window) : 12.308 uJ
+whole waveform  : 1.387 ms, average power 8.956 mW, energy 12.418 uJ, awake duty 71.1 %
